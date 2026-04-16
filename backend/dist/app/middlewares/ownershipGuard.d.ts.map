@@ -1,0 +1,1 @@
+{"version":3,"file":"ownershipGuard.d.ts","sourceRoot":"","sources":["../../../src/app/middlewares/ownershipGuard.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AAK1D;;;;GAIG;AACH,QAAA,MAAM,cAAc,GAClB,KAAK,OAAO,EACZ,MAAM,QAAQ,EACd,MAAM,YAAY,KACjB,OAAO,CAAC,IAAI,CA6Bd,CAAC;AAEF,eAAe,cAAc,CAAC"}

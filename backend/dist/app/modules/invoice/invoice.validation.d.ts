@@ -1,0 +1,74 @@
+import { z } from "zod";
+export declare const InvoiceValidation: {
+    createInvoiceSchema: z.ZodObject<{
+        body: z.ZodObject<{
+            invoiceDate: z.ZodOptional<z.ZodCoercedDate<unknown>>;
+            tax: z.ZodOptional<z.ZodNumber>;
+            discount: z.ZodOptional<z.ZodNumber>;
+            receivedAmount: z.ZodOptional<z.ZodNumber>;
+            challanNo: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            vehicleNo: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            siteLocation: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            billingAddress: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            referenceNumber: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            paymentMethod: z.ZodNullable<z.ZodOptional<z.ZodEnum<{
+                cash: "cash";
+                bank: "bank";
+                upi: "upi";
+            }>>>;
+            bankName: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            bankAccount: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            bankIfsc: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            transactionNumber: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            termsAndConditions: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            notes: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            authorizedSignatory: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            customerId: z.ZodNumber;
+            items: z.ZodArray<z.ZodObject<{
+                description: z.ZodString;
+                unit: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+                quantity: z.ZodNumber;
+                rate: z.ZodNumber;
+            }, z.core.$strip>>;
+        }, z.core.$strip>;
+    }, z.core.$strip>;
+    updateInvoiceSchema: z.ZodObject<{
+        body: z.ZodObject<{
+            invoiceDate: z.ZodOptional<z.ZodCoercedDate<unknown>>;
+            tax: z.ZodOptional<z.ZodNumber>;
+            discount: z.ZodOptional<z.ZodNumber>;
+            receivedAmount: z.ZodOptional<z.ZodNumber>;
+            challanNo: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            vehicleNo: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            siteLocation: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            billingAddress: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            referenceNumber: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            paymentMethod: z.ZodNullable<z.ZodOptional<z.ZodEnum<{
+                cash: "cash";
+                bank: "bank";
+                upi: "upi";
+            }>>>;
+            bankName: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            bankAccount: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            bankIfsc: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            transactionNumber: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            termsAndConditions: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            notes: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            authorizedSignatory: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+            customerId: z.ZodOptional<z.ZodNumber>;
+            items: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                description: z.ZodString;
+                unit: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+                quantity: z.ZodNumber;
+                rate: z.ZodNumber;
+            }, z.core.$strip>>>;
+            status: z.ZodOptional<z.ZodEnum<{
+                draft: "draft";
+                sent: "sent";
+                paid: "paid";
+                cancelled: "cancelled";
+            }>>;
+        }, z.core.$strip>;
+    }, z.core.$strip>;
+};
+//# sourceMappingURL=invoice.validation.d.ts.map
