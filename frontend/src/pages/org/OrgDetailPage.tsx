@@ -48,8 +48,9 @@ import {
 import { useGetUsersQuery } from "@/features/user/userApi"
 import { useAssignOrganizationMutation } from "@/features/admin/adminOrgApi"
 import { useAppSelector } from "@/store/hooks"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { Organization } from "@/types"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 // ─── Edit Dialog ───────────────────────────────────────────────────────────────
 
@@ -60,6 +61,11 @@ const editSchema = z.object({
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   registerNumber: z.string().optional(),
   gstNumber: z.string().optional(),
+  stateCode: z
+    .string()
+    .regex(/^\d{2}$/, "Two-digit GST state code (e.g. 27)")
+    .optional()
+    .or(z.literal("")),
   invoicePrefix: z.string().max(6, "Prefix max 6 chars").optional(),
 })
 
@@ -87,6 +93,7 @@ function EditOrgDialog({
       email: org.email ?? "",
       registerNumber: org.registerNumber ?? "",
       gstNumber: org.gstNumber ?? "",
+      stateCode: org.stateCode ?? "",
       invoicePrefix: org.invoicePrefix,
     },
   })
@@ -99,6 +106,7 @@ function EditOrgDialog({
       email: org.email ?? "",
       registerNumber: org.registerNumber ?? "",
       gstNumber: org.gstNumber ?? "",
+      stateCode: org.stateCode ?? "",
       invoicePrefix: org.invoicePrefix,
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,14 +123,15 @@ function EditOrgDialog({
           email: values.email || undefined,
           registerNumber: values.registerNumber || undefined,
           gstNumber: values.gstNumber || undefined,
+          stateCode: values.stateCode || undefined,
           invoicePrefix: values.invoicePrefix || undefined,
         },
       }).unwrap()
       refetch()
       toast.success("Organization updated successfully")
       onOpenChange(false)
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to update organization")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update organization"))
     }
   }
 
@@ -161,6 +170,13 @@ function EditOrgDialog({
               label="GST Number"
             />
           </div>
+          <InvoInput
+            control={form.control}
+            name="stateCode"
+            label="GST State Code"
+            placeholder="e.g. 27"
+            description="Two digits — required to raise GST invoices"
+          />
           <InvoInput
             control={form.control}
             name="invoicePrefix"
@@ -215,8 +231,8 @@ function AssignOrgDialog({
       toast.success("Organization assigned successfully")
       onOpenChange(false)
       form.reset()
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to assign organization")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to assign organization"))
     }
   }
 
@@ -288,8 +304,8 @@ function LogoSection({ org }: { org: Organization }) {
     try {
       await uploadLogo({ id: org.id, file }).unwrap()
       toast.success("Logo uploaded successfully")
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to upload logo")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to upload logo"))
     }
     if (fileRef.current) fileRef.current.value = ""
   }
@@ -374,8 +390,8 @@ export default function OrgDetailPage() {
       await deleteOrg(org.id).unwrap()
       toast.success("Organization deleted")
       navigate("/", { replace: true })
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to delete organization")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to delete organization"))
     }
   }
 

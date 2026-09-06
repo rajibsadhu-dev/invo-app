@@ -1,44 +1,86 @@
-const ones = [
+import { Prisma } from "@prisma/client";
+
+type Numeric = Prisma.Decimal | number | string;
+
+const ONES = [
   "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
   "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
   "Seventeen", "Eighteen", "Nineteen",
 ];
-const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+const TENS = [
+  "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety",
+];
 
-function chunkToWords(n: number): string {
+const CRORE = 10_000_000;
+const LAKH = 100_000;
+const THOUSAND = 1_000;
+
+/** n < 100 */
+const underHundred = (n: number): string => {
+  if (n < 20) return ONES[n];
+  const tens = TENS[Math.floor(n / 10)];
+  const ones = n % 10;
+  return ones ? `${tens} ${ONES[ones]}` : tens;
+};
+
+/** n < 1000 */
+const underThousand = (n: number): string => {
+  if (n < 100) return underHundred(n);
+  const hundreds = `${ONES[Math.floor(n / 100)]} Hundred`;
+  const rest = n % 100;
+  return rest ? `${hundreds} ${underHundred(rest)}` : hundreds;
+};
+
+/**
+ * Indian numbering: crore / lakh / thousand, not million / billion. Recurses on the
+ * crore count so values above 99 crore ("One Hundred Twenty Crore") read correctly.
+ */
+const indianWords = (n: number): string => {
   if (n === 0) return "";
-  if (n < 20) return ones[n];
-  if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
-  return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + chunkToWords(n % 100) : "");
-}
 
-export function amountInWords(amount: number): string {
-  if (amount === 0) return "Zero Only";
+  const parts: string[] = [];
 
-  const intPart = Math.floor(amount);
-  const decPart = Math.round((amount - intPart) * 100);
+  const crore = Math.floor(n / CRORE);
+  let rest = n % CRORE;
+  if (crore > 0) parts.push(`${indianWords(crore)} Crore`);
 
-  const groups = [
-    { divisor: 1_000_000_000, label: "Billion" },
-    { divisor: 1_000_000, label: "Million" },
-    { divisor: 1_000, label: "Thousand" },
-    { divisor: 1, label: "" },
-  ];
+  const lakh = Math.floor(rest / LAKH);
+  rest %= LAKH;
+  if (lakh > 0) parts.push(`${underThousand(lakh)} Lakh`);
 
-  let words = "";
-  let remaining = intPart;
+  const thousand = Math.floor(rest / THOUSAND);
+  rest %= THOUSAND;
+  if (thousand > 0) parts.push(`${underThousand(thousand)} Thousand`);
 
-  for (const { divisor, label } of groups) {
-    if (remaining >= divisor) {
-      const count = Math.floor(remaining / divisor);
-      words += (words ? " " : "") + chunkToWords(count) + (label ? " " + label : "");
-      remaining %= divisor;
-    }
+  if (rest > 0) parts.push(underThousand(rest));
+
+  return parts.join(" ");
+};
+
+/**
+ * Renders an amount as Indian-English currency words for the invoice face.
+ *
+ * This is the single source of truth — the frontend must render the value the backend
+ * stored rather than computing its own, or the two drift (they previously disagreed on
+ * "Cents" versus "Paise").
+ */
+export function amountInWords(amount: Numeric): string {
+  const value = new Prisma.Decimal(amount).toDecimalPlaces(
+    2,
+    Prisma.Decimal.ROUND_HALF_UP
+  );
+
+  if (value.isNegative()) {
+    return `Minus ${amountInWords(value.abs())}`;
   }
 
-  if (decPart > 0) {
-    words += " and " + chunkToWords(decPart) + " Cents";
-  }
+  const rupees = value.floor().toNumber();
+  const paise = value.minus(value.floor()).times(100).round().toNumber();
 
-  return words + " Only";
+  const rupeeWords = rupees === 0 ? "Zero" : indianWords(rupees);
+  const base = `Rupees ${rupeeWords}`;
+
+  return paise > 0
+    ? `${base} and ${underHundred(paise)} Paise Only`
+    : `${base} Only`;
 }

@@ -39,8 +39,9 @@ import {
   useAdminCreateOrganizationMutation,
 } from "@/features/admin/adminOrgApi"
 import { useDeleteOrganizationMutation } from "@/features/org/orgApi"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { OrganizationWithOwner } from "@/types"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 // ─── Create Org Dialog ────────────────────────────────────────────────────────
 
@@ -92,8 +93,8 @@ function CreateOrgDialog({
       toast.success("Organization created successfully")
       onOpenChange(false)
       form.reset()
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to create organization")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to create organization"))
     }
   }
 
@@ -140,8 +141,8 @@ function DeleteOrgButton({ org }: { org: OrganizationWithOwner }) {
     try {
       await deleteOrg(org.id).unwrap()
       toast.success(`"${org.name}" deleted`)
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to delete organization")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to delete organization"))
     }
   }
 

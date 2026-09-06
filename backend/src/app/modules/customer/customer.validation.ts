@@ -7,6 +7,11 @@ const createCustomerSchema = z.object({
     phone: z.string().optional(),
     address: z.string().optional(),
     gstNumber: z.string().optional(),
+    stateCode: z
+      .string()
+      .regex(/^\d{2}$/, "State code must be two digits")
+      .optional()
+      .or(z.literal("")),
   }),
 });
 
@@ -17,6 +22,11 @@ const updateCustomerSchema = z.object({
     phone: z.string().optional(),
     address: z.string().optional(),
     gstNumber: z.string().optional(),
+    stateCode: z
+      .string()
+      .regex(/^\d{2}$/, "State code must be two digits")
+      .optional()
+      .or(z.literal("")),
   }),
 });
 

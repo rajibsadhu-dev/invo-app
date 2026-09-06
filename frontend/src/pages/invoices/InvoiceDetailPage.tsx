@@ -15,17 +15,30 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useGetInvoiceByIdQuery, useUpdateInvoiceMutation, useDeleteInvoiceMutation } from "@/features/invoice/invoiceApi"
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { StatusBadge } from "./InvoicesPage"
 import PrintableInvoice from "./PrintableInvoice"
+import { formatINR } from "@/lib/money"
 import type { InvoiceStatus } from "@/types"
+import { getApiErrorMessage } from "@/lib/apiError"
 
-const STATUS_OPTIONS: { value: InvoiceStatus; label: string }[] = [
-  { value: "draft",     label: "Draft" },
-  { value: "sent",      label: "Sent" },
-  { value: "paid",      label: "Paid" },
-  { value: "cancelled", label: "Cancelled" },
-]
+const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  draft: "Draft",
+  sent: "Sent",
+  paid: "Paid",
+  cancelled: "Cancelled",
+}
+
+/**
+ * Mirrors the server's state machine (backend invoice.service.ts). `paid` and `cancelled`
+ * are terminal. Offering a move the server rejects only produces an error toast.
+ */
+const ALLOWED_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
+  draft: ["sent", "cancelled"],
+  sent: ["paid", "cancelled"],
+  paid: [],
+  cancelled: [],
+}
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   return (
@@ -87,8 +100,8 @@ export default function InvoiceDetailPage() {
     try {
       await updateInvoice({ orgId: oId, invoiceId: iId, body: { status } }).unwrap()
       toast.success("Status updated")
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to update status")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update status"))
     }
   }
 
@@ -97,17 +110,36 @@ export default function InvoiceDetailPage() {
       await deleteInvoice({ orgId: oId, invoiceId: iId }).unwrap()
       toast.success("Invoice deleted")
       navigate(`/org/${oId}/invoices`, { replace: true })
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to delete invoice")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to delete invoice"))
     }
   }
 
   const subtotal = Number(invoice.subtotal)
   const tax = Number(invoice.tax)
   const discount = Number(invoice.discount)
+  const taxableValue = Number(invoice.taxableValue ?? subtotal - discount)
+  const cgstTotal = Number(invoice.cgstTotal ?? 0)
+  const sgstTotal = Number(invoice.sgstTotal ?? 0)
+  const igstTotal = Number(invoice.igstTotal ?? 0)
+  const roundOff = Number(invoice.roundOff ?? 0)
   const grandTotal = Number(invoice.grandTotal)
   const receivedAmount = Number(invoice.receivedAmount)
-  const balanceDue = invoice.balanceDue
+  const balanceDue = Number(invoice.balanceDue)
+
+  // Invoices raised before the GST migration carry a flat `tax` with no CGST/SGST/IGST
+  // breakdown. Show what they actually have rather than three zero rows.
+  const hasGstBreakdown = cgstTotal > 0 || sgstTotal > 0 || igstTotal > 0
+  const isLegacyFlatTax = !hasGstBreakdown && tax > 0
+
+  const statusOptions = [
+    { value: invoice.status, label: STATUS_LABELS[invoice.status] },
+    ...ALLOWED_TRANSITIONS[invoice.status].map((v) => ({
+      value: v,
+      label: STATUS_LABELS[v],
+    })),
+  ]
+  const isTerminal = ALLOWED_TRANSITIONS[invoice.status].length === 0
   const logoUrl = org?.logo ? `${import.meta.env.VITE_API_URL}/uploads/${org.logo}` : null
 
   const invoiceDateStr = invoice.invoiceDate
@@ -123,13 +155,13 @@ export default function InvoiceDetailPage() {
           <Select
             value={invoice.status}
             onValueChange={(v) => handleStatusChange(v as InvoiceStatus)}
-            disabled={isUpdating}
+            disabled={isUpdating || isTerminal}
           >
             <SelectTrigger className="h-7 w-36 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_OPTIONS.map((opt) => (
+              {statusOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
               ))}
             </SelectContent>
@@ -139,7 +171,19 @@ export default function InvoiceDetailPage() {
           <Button size="sm" variant="outline" onClick={() => handlePrint()}>
             <Printer className="h-3.5 w-3.5" /> Print / PDF
           </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate(`/org/${oId}/invoices/${iId}/edit`)}>
+          {/* Figures are frozen once the invoice leaves draft — the server refuses the
+              edit, so do not offer it. */}
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={invoice.status !== "draft"}
+            title={
+              invoice.status !== "draft"
+                ? `A ${invoice.status} invoice cannot be edited`
+                : undefined
+            }
+            onClick={() => navigate(`/org/${oId}/invoices/${iId}/edit`)}
+          >
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Button>
           <AlertDialog>
@@ -150,7 +194,8 @@ export default function InvoiceDetailPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete invoice?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete <strong>{invoice.invoiceNumber}</strong>. This cannot be undone.
+                  <strong>{invoice.invoiceNumber}</strong> will be withdrawn and no longer
+                  listed. Its number stays reserved and is never reissued.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -206,9 +251,11 @@ export default function InvoiceDetailPage() {
               <tr>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">#</th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Description</th>
+                <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">HSN/SAC</th>
                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Unit</th>
                 <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Qty</th>
                 <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Rate (₹)</th>
+                <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">GST %</th>
                 <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Amount (₹)</th>
               </tr>
             </thead>
@@ -217,10 +264,14 @@ export default function InvoiceDetailPage() {
                 <tr key={item.id}>
                   <td className="px-4 py-2.5 text-muted-foreground">{i + 1}</td>
                   <td className="px-4 py-2.5">{item.description}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{item.hsnCode || "—"}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{item.unit || "—"}</td>
                   <td className="px-4 py-2.5 text-right">{Number(item.quantity)}</td>
-                  <td className="px-4 py-2.5 text-right">₹ {Number(item.rate).toFixed(2)}</td>
-                  <td className="px-4 py-2.5 text-right font-medium">₹ {Number(item.amount).toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-right">{formatINR(item.rate)}</td>
+                  <td className="px-4 py-2.5 text-right text-muted-foreground">
+                    {Number(item.gstRate ?? 0)}%
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-medium">{formatINR(item.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -232,27 +283,65 @@ export default function InvoiceDetailPage() {
           <div className="w-72 flex flex-col gap-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>₹ {subtotal.toFixed(2)}</span>
+              <span>{formatINR(subtotal)}</span>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Discount</span>
+                <span>− {formatINR(discount)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">GST / Tax</span>
-              <span>+ ₹ {tax.toFixed(2)}</span>
+              <span className="text-muted-foreground">Taxable Value</span>
+              <span>{formatINR(taxableValue)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Discount</span>
-              <span>− ₹ {discount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between border-t pt-1.5 font-semibold text-base">
+            {isLegacyFlatTax ? (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tax</span>
+                <span>+ {formatINR(tax)}</span>
+              </div>
+            ) : (
+              <>
+                {cgstTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">CGST</span>
+                    <span>+ {formatINR(cgstTotal)}</span>
+                  </div>
+                )}
+                {sgstTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">SGST</span>
+                    <span>+ {formatINR(sgstTotal)}</span>
+                  </div>
+                )}
+                {igstTotal > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">IGST</span>
+                    <span>+ {formatINR(igstTotal)}</span>
+                  </div>
+                )}
+              </>
+            )}
+            {roundOff !== 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Round Off</span>
+                <span>
+                  {roundOff < 0 ? "− " : "+ "}
+                  {formatINR(Math.abs(roundOff))}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between border-t pt-1.5 text-base font-semibold">
               <span>Grand Total</span>
-              <span>₹ {grandTotal.toFixed(2)}</span>
+              <span>{formatINR(grandTotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Received</span>
-              <span>− ₹ {receivedAmount.toFixed(2)}</span>
+              <span>− {formatINR(receivedAmount)}</span>
             </div>
-            <div className="flex justify-between border-t pt-1.5 font-semibold text-sm text-destructive">
+            <div className="flex justify-between border-t pt-1.5 text-sm font-semibold text-destructive">
               <span>Balance Due</span>
-              <span>₹ {balanceDue.toFixed(2)}</span>
+              <span>{formatINR(balanceDue)}</span>
             </div>
           </div>
         </div>

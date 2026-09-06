@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+backend/public/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Uploads (runtime user content)
+backend/uploads/*
+!backend/uploads/**/.gitkeep
+
+# Local scratch / data dumps — never commit DB dumps, they contain PII + password hashes
+files/
+*.sql
+!backend/prisma/migrations/**/*.sql
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*:Zone.Identifier
+
+# Stray SPA build artifact at backend root (superseded by backend/public/)
+backend/index.html

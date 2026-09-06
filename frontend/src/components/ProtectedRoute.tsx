@@ -6,10 +6,12 @@ export default function ProtectedRoute({
 }: {
   children: React.ReactNode
 }) {
-  const { user, accessToken } = useAppSelector((s) => s.auth)
+  const user = useAppSelector((s) => s.auth.user)
   const location = useLocation()
 
-  if (!user || !accessToken) {
+  // Keyed on `user` alone: the access token is memory-only and is restored asynchronously
+  // by AuthBootstrap, so requiring it here would redirect on every reload.
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

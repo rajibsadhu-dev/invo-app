@@ -7,6 +7,8 @@ export type IOrganization = {
   logo?: string;
   registerNumber?: string;
   gstNumber?: string;
+  /** Two-digit GST state code of the supplier. Required for GST-rated invoices. */
+  stateCode?: string;
   invoicePrefix?: string;
   nextInvoiceNumber?: number;
 };

@@ -26,3 +26,15 @@ export type ILoginResponse = {
 export type IRefreshTokenResponse = {
   accessToken: string;
 };
+
+/** Self-service profile edit. Intentionally excludes `role` and `password`. */
+export type IUpdateMePayload = {
+  name?: string;
+  email?: string;
+  phone?: string;
+};
+
+export type IChangePasswordPayload = {
+  currentPassword: string;
+  newPassword: string;
+};

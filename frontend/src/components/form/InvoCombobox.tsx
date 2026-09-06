@@ -39,11 +39,16 @@ export function InvoCombobox<T extends FieldValues>({
     opt.label.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Clearing the search belongs to the close action, not to an effect reacting to it —
+  // setting state inside an effect body triggers a cascading re-render.
+  const changeOpen = (next: boolean) => {
+    setOpen(next)
+    if (!next) setSearch("")
+  }
+
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 0)
-    } else {
-      setSearch("")
     }
   }, [open])
 
@@ -58,7 +63,7 @@ export function InvoCombobox<T extends FieldValues>({
           <div className="relative">
             <button
               type="button"
-              onClick={() => !disabled && setOpen((o) => !o)}
+              onClick={() => !disabled && changeOpen(!open)}
               disabled={disabled}
               aria-invalid={!!fieldState.error}
               className={cn(
@@ -83,7 +88,7 @@ export function InvoCombobox<T extends FieldValues>({
               <>
                 <div
                   className="fixed inset-0 z-40"
-                  onClick={() => setOpen(false)}
+                  onClick={() => changeOpen(false)}
                 />
                 <div className="absolute top-full left-0 z-50 mt-1 w-full rounded-lg bg-popover shadow-md ring-1 ring-foreground/10">
                   {/* Search */}
@@ -113,7 +118,7 @@ export function InvoCombobox<T extends FieldValues>({
                             aria-selected={isSelected}
                             onClick={() => {
                               field.onChange(opt.value)
-                              setOpen(false)
+                              changeOpen(false)
                             }}
                             className={cn(
                               "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm select-none",

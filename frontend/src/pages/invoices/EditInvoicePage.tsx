@@ -9,8 +9,10 @@ import { InvoForm } from "@/components/form"
 import { useGetInvoiceByIdQuery, useUpdateInvoiceMutation } from "@/features/invoice/invoiceApi"
 import { useGetCustomersQuery } from "@/features/customer/customerApi"
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
-import { InvoiceFormFields, invoiceFormSchema, todayString, type InvoiceFormValues } from "./InvoiceFormFields"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
+import { InvoiceFormFields } from "./InvoiceFormFields"
+import { invoiceFormSchema, todayString, type InvoiceFormValues } from "./invoiceForm.schema"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 export default function EditInvoicePage() {
   const { orgId, invoiceId } = useParams<{ orgId: string; invoiceId: string }>()
@@ -33,10 +35,7 @@ export default function EditInvoicePage() {
   ])
 
   const { data: customersData } = useGetCustomersQuery({ orgId: oId, limit: 100 })
-  const customerOptions = (customersData?.data ?? []).map((c) => ({
-    value: String(c.id),
-    label: c.name,
-  }))
+  const customers = customersData?.data ?? []
 
   const [updateInvoice, { isLoading: isSaving }] = useUpdateInvoiceMutation()
 
@@ -45,8 +44,9 @@ export default function EditInvoicePage() {
     defaultValues: {
       customerId: 0,
       invoiceDate: todayString(),
-      items: [{ description: "", unit: "", quantity: 1, rate: 0 }],
-      tax: 0,
+      items: [
+        { description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
+      ],
       discount: 0,
       receivedAmount: 0,
       paymentMethod: null,
@@ -62,11 +62,12 @@ export default function EditInvoicePage() {
         : todayString(),
       items: (invoice.items ?? []).map((item) => ({
         description: item.description,
+        hsnCode: item.hsnCode ?? "",
         unit: item.unit ?? "",
         quantity: Number(item.quantity),
         rate: Number(item.rate),
+        gstRate: Number(item.gstRate ?? 0),
       })),
-      tax: Number(invoice.tax),
       discount: Number(invoice.discount),
       receivedAmount: Number(invoice.receivedAmount),
       challanNo: invoice.challanNo ?? "",
@@ -95,7 +96,7 @@ export default function EditInvoicePage() {
           customerId: values.customerId,
           invoiceDate: values.invoiceDate,
           items: values.items,
-          tax: values.tax,
+          // `tax` is not sent: the server derives it from each line's GST rate.
           discount: values.discount,
           receivedAmount: values.receivedAmount,
           challanNo: values.challanNo || null,
@@ -115,8 +116,8 @@ export default function EditInvoicePage() {
       }).unwrap()
       toast.success("Invoice updated successfully")
       navigate(`/org/${oId}/invoices/${iId}`)
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to update invoice")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update invoice"))
     }
   }
 
@@ -145,7 +146,8 @@ export default function EditInvoicePage() {
       <InvoForm form={form} onSubmit={onSubmit}>
         <InvoiceFormFields
           form={form}
-          customerOptions={customerOptions}
+          customers={customers}
+          orgStateCode={org?.stateCode}
           isSubmitting={isSaving}
           submitLabel="Save Changes"
         />

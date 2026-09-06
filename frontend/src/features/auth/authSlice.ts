@@ -31,6 +31,10 @@ const authSlice = createSlice({
       state.user = action.payload.user
       state.accessToken = action.payload.accessToken
     },
+    /** Profile-only update — keeps the in-memory token untouched. */
+    setUser(state, action: PayloadAction<AuthUser>) {
+      state.user = action.payload
+    },
     setToken(state, action: PayloadAction<string>) {
       state.accessToken = action.payload
     },
@@ -41,5 +45,6 @@ const authSlice = createSlice({
   },
 })
 
-export const { setCredentials, setToken, clearCredentials } = authSlice.actions
+export const { setCredentials, setUser, setToken, clearCredentials } =
+  authSlice.actions
 export default authSlice.reducer

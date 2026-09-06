@@ -3,51 +3,46 @@ import httpStatus from "http-status";
 import catchAsync from "@/shared/catchAsync";
 import sendResponse from "@/shared/sendResponse";
 import { AuthService } from "./auth.service";
-import config from "@/config";
+import {
+  REFRESH_COOKIE,
+  clearRefreshCookieOptions,
+  refreshCookieOptions,
+} from "@/helpers/cookie";
 
 const login = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthService.login(req.body);
+  const { refreshToken, ...result } = await AuthService.login(req.body);
 
-  // Set refresh token in httpOnly cookie
-  res.cookie("refreshToken", result.refreshToken, {
-    secure: config.env === "production",
-    httpOnly: true,
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+  res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Login successful",
+    // The refresh token lives in the httpOnly cookie only — never in the JSON body,
+    // where the SPA could persist it to localStorage.
     data: result,
   });
 });
 
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
-  const token = req.cookies.refreshToken;
+  const token = req.cookies?.[REFRESH_COOKIE];
   const result = await AuthService.refreshToken(token);
+
+  // Rotation: the old cookie value is now revoked, so replace it.
+  res.cookie(REFRESH_COOKIE, result.refreshToken, refreshCookieOptions());
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Token refreshed successfully",
-    data: result,
+    data: { accessToken: result.accessToken },
   });
 });
 
 const logout = catchAsync(async (req: Request, res: Response) => {
-  const token = req.cookies.refreshToken;
+  await AuthService.logout(req.cookies?.[REFRESH_COOKIE]);
 
-  // Delete refresh token from DB
-  await AuthService.logout(token);
-
-  // Clear cookie
-  res.clearCookie("refreshToken", {
-    secure: config.env === "production",
-    httpOnly: true,
-    sameSite: "strict",
-  });
+  res.clearCookie(REFRESH_COOKIE, clearRefreshCookieOptions());
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -58,19 +53,46 @@ const logout = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getMe = catchAsync(async (req: Request, res: Response) => {
-  const { id } = (req as any).user;
-  const prisma = (await import("@/lib/prisma")).default;
-  const user = await prisma.user.findUnique({
-    where: { id: Number(id) },
-    omit: { password: true },
-  });
+  const result = await AuthService.getMe(req.user!.id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "User profile retrieved",
-    data: user,
+    data: result,
   });
 });
 
-export const AuthController = { login, refreshToken, logout, getMe };
+const updateMe = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.updateMe(req.user!.id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Profile updated successfully",
+    data: result,
+  });
+});
+
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  await AuthService.changePassword(req.user!.id, req.body);
+
+  // Every session was revoked, this one included.
+  res.clearCookie(REFRESH_COOKIE, clearRefreshCookieOptions());
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Password changed successfully. Please log in again.",
+    data: null,
+  });
+});
+
+export const AuthController = {
+  login,
+  refreshToken,
+  logout,
+  getMe,
+  updateMe,
+  changePassword,
+};

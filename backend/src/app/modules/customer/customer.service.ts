@@ -14,14 +14,14 @@ const createCustomer = async (organizationId: number, payload: ICreateCustomer) 
   });
 };
 
+const MAX_PAGE_SIZE = 100;
+
 const getCustomers = async (organizationId: number, query: ICustomerQuery) => {
-  const {
-    search,
-    page = 1,
-    limit = 10,
-    sortBy = "createdAt",
-    sortOrder = "desc",
-  } = query;
+  const { search, page = 1, sortBy = "createdAt", sortOrder = "desc" } = query;
+
+  // An unbounded ?limit lets one request pull the entire table.
+  const limit = Math.min(Math.max(query.limit ?? 10, 1), MAX_PAGE_SIZE);
+  const currentPage = Math.max(page, 1);
 
   const where: Prisma.CustomerWhereInput = {
     organizationId,
@@ -41,7 +41,7 @@ const getCustomers = async (organizationId: number, query: ICustomerQuery) => {
     prisma.customer.findMany({
       where,
       orderBy: { [orderByField]: sortOrder },
-      skip: (page - 1) * limit,
+      skip: (currentPage - 1) * limit,
       take: limit,
     }),
     prisma.customer.count({ where }),
@@ -51,7 +51,7 @@ const getCustomers = async (organizationId: number, query: ICustomerQuery) => {
     data,
     meta: {
       total,
-      page,
+      page: currentPage,
       limit,
       totalPages: Math.ceil(total / limit),
     },
@@ -86,6 +86,19 @@ const updateCustomer = async (
 
 const deleteCustomer = async (organizationId: number, customerId: number) => {
   await getCustomerById(organizationId, customerId);
+
+  // The FK is Restrict, so the database would refuse this anyway — but with an opaque
+  // constraint error rather than something the user can act on.
+  const invoiceCount = await prisma.invoice.count({
+    where: { customerId, deletedAt: null },
+  });
+  if (invoiceCount > 0) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      `This customer has ${invoiceCount} invoice(s) and cannot be deleted`
+    );
+  }
+
   return prisma.customer.delete({ where: { id: customerId } });
 };
 

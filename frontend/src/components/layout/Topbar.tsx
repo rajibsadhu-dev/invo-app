@@ -9,7 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { useBreadcrumbItems } from "@/context/BreadcrumbContext"
+import { useBreadcrumbItems } from "@/context/breadcrumbStore"
 
 export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const crumbs = useBreadcrumbItems()

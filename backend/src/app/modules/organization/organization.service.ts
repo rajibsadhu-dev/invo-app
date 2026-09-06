@@ -44,6 +44,16 @@ const updateOrganization = async (id: number, payload: IUpdateOrganization) => {
 };
 
 const deleteOrganization = async (id: number) => {
+  // Organizations cascade to customers and invoices. Refuse rather than destroy a
+  // financial history that the business is legally required to retain.
+  const invoiceCount = await prisma.invoice.count({ where: { organizationId: id } });
+  if (invoiceCount > 0) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      `This organization has ${invoiceCount} invoice(s) and cannot be deleted`
+    );
+  }
+
   // Delete logo file if it exists
   const org = await prisma.organization.findUnique({ where: { id } });
   if (org?.logo) {

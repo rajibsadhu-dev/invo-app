@@ -203,14 +203,29 @@ const s: Record<string, React.CSSProperties> = {
 
 /* ─── Component ──────────────────────────────────────────────────────────────── */
 
+/** Only widen the items table with a GST column when the invoice actually carries GST. */
+function items0HasGst(invoice: PrintableInvoiceProps["invoice"]): boolean {
+  return (invoice.items ?? []).some((item) => Number(item.gstRate ?? 0) > 0)
+}
+
 const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
   ({ invoice, org, logoUrl }, ref) => {
     const subtotal = Number(invoice.subtotal)
     const tax = Number(invoice.tax)
     const discount = Number(invoice.discount)
+    const taxableValue = Number(invoice.taxableValue ?? subtotal - discount)
+    const cgstTotal = Number(invoice.cgstTotal ?? 0)
+    const sgstTotal = Number(invoice.sgstTotal ?? 0)
+    const igstTotal = Number(invoice.igstTotal ?? 0)
+    const roundOff = Number(invoice.roundOff ?? 0)
     const grandTotal = Number(invoice.grandTotal)
     const received = Number(invoice.receivedAmount)
     const balance = Number(invoice.balanceDue)
+
+    // Pre-GST invoices carry a flat tax with no component split.
+    const hasGstBreakdown = cgstTotal > 0 || sgstTotal > 0 || igstTotal > 0
+    const isLegacyFlatTax = !hasGstBreakdown && tax > 0
+    const showGstColumn = items0HasGst(invoice)
 
     const items = invoice.items ?? []
     const totalQty = items.reduce((sum, it) => sum + Number(it.quantity), 0)
@@ -325,10 +340,14 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
                   <thead>
                     <tr>
                       <th style={{ ...s.itemsCell, width: "5%", textAlign: "center" }}>#</th>
-                      <th style={{ ...s.itemsCell, width: "42%", textAlign: "left" }}>Item name</th>
-                      <th style={{ ...s.itemsCell, width: "18%", textAlign: "right" }}>Quantity</th>
-                      <th style={{ ...s.itemsCell, width: "17%", textAlign: "right" }}>Price/ Unit</th>
-                      <th style={{ ...s.itemsCell, width: "18%", textAlign: "right" }}>Amount</th>
+                      <th style={{ ...s.itemsCell, width: showGstColumn ? "32%" : "42%", textAlign: "left" }}>Item name</th>
+                      <th style={{ ...s.itemsCell, width: "12%", textAlign: "left" }}>HSN/SAC</th>
+                      <th style={{ ...s.itemsCell, width: "14%", textAlign: "right" }}>Quantity</th>
+                      <th style={{ ...s.itemsCell, width: "15%", textAlign: "right" }}>Price/ Unit</th>
+                      {showGstColumn && (
+                        <th style={{ ...s.itemsCell, width: "10%", textAlign: "right" }}>GST</th>
+                      )}
+                      <th style={{ ...s.itemsCell, width: showGstColumn ? "12%" : "18%", textAlign: "right" }}>Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -341,8 +360,12 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
                             <span style={{ color: "#555", marginLeft: "6px" }}>({item.unit})</span>
                           )}
                         </td>
+                        <td style={{ ...s.itemsCell, textAlign: "left" }}>{item.hsnCode || "—"}</td>
                         <td style={{ ...s.itemsCell, textAlign: "right" }}>{Number(item.quantity)}</td>
                         <td style={{ ...s.itemsCell, textAlign: "right" }}>&#8377; {Number(item.rate).toFixed(2)}</td>
+                        {showGstColumn && (
+                          <td style={{ ...s.itemsCell, textAlign: "right" }}>{Number(item.gstRate ?? 0)}%</td>
+                        )}
                         <td style={{ ...s.itemsCell, textAlign: "right" }}>&#8377; {Number(item.amount).toFixed(2)}</td>
                       </tr>
                     ))}
@@ -351,8 +374,10 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
                     <tr>
                       <td style={{ ...s.itemsCell, textAlign: "center" }} />
                       <td style={{ ...s.itemsCell, textAlign: "left" }}><strong>Total</strong></td>
+                      <td style={{ ...s.itemsCell, textAlign: "left" }} />
                       <td style={{ ...s.itemsCell, textAlign: "right" }}><strong>{totalQty}</strong></td>
                       <td style={{ ...s.itemsCell, textAlign: "right" }} />
+                      {showGstColumn && <td style={{ ...s.itemsCell, textAlign: "right" }} />}
                       <td style={{ ...s.itemsCell, textAlign: "right" }}><strong>&#8377; {subtotal.toFixed(2)}</strong></td>
                     </tr>
                   </tfoot>
@@ -377,10 +402,42 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
                       <td style={s.amountsTd}>Sub Total</td>
                       <td style={s.amtValue}>&#8377; {subtotal.toFixed(2)}</td>
                     </tr>
-                    {tax > 0 && (
+                    {discount > 0 && (
                       <tr>
-                        <td style={s.amountsTd}>GST / Tax</td>
+                        <td style={s.amountsTd}>Taxable Value</td>
+                        <td style={s.amtValue}>&#8377; {taxableValue.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    {isLegacyFlatTax && (
+                      <tr>
+                        <td style={s.amountsTd}>Tax</td>
                         <td style={s.amtValue}>+ &#8377; {tax.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    {cgstTotal > 0 && (
+                      <tr>
+                        <td style={s.amountsTd}>CGST</td>
+                        <td style={s.amtValue}>+ &#8377; {cgstTotal.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    {sgstTotal > 0 && (
+                      <tr>
+                        <td style={s.amountsTd}>SGST</td>
+                        <td style={s.amtValue}>+ &#8377; {sgstTotal.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    {igstTotal > 0 && (
+                      <tr>
+                        <td style={s.amountsTd}>IGST</td>
+                        <td style={s.amtValue}>+ &#8377; {igstTotal.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    {roundOff !== 0 && (
+                      <tr>
+                        <td style={s.amountsTd}>Round Off</td>
+                        <td style={s.amtValue}>
+                          {roundOff < 0 ? "\u2212 " : "+ "}&#8377; {Math.abs(roundOff).toFixed(2)}
+                        </td>
                       </tr>
                     )}
                     {discount > 0 && (

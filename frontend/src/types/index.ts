@@ -41,6 +41,18 @@ export type CreateUserPayload = {
   role: UserRole
 }
 
+/** Self-service profile edit — deliberately cannot carry `role` or `password`. */
+export type UpdateMePayload = {
+  name?: string
+  email?: string
+  phone?: string
+}
+
+export type ChangePasswordPayload = {
+  currentPassword: string
+  newPassword: string
+}
+
 export type UpdateUserPayload = {
   name?: string
   email?: string
@@ -61,6 +73,7 @@ export type Organization = {
   logo?: string | null
   registerNumber?: string | null
   gstNumber?: string | null
+  stateCode?: string | null
   invoicePrefix: string
   nextInvoiceNumber: number
   createdAt: string
@@ -74,6 +87,7 @@ export type CreateOrgPayload = {
   email?: string
   registerNumber?: string
   gstNumber?: string
+  stateCode?: string
   invoicePrefix?: string
 }
 
@@ -112,6 +126,7 @@ export type Customer = {
   phone?: string | null
   address?: string | null
   gstNumber?: string | null
+  stateCode?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -122,6 +137,7 @@ export type CreateCustomerPayload = {
   phone?: string
   address?: string
   gstNumber?: string
+  stateCode?: string
 }
 
 export type UpdateCustomerPayload = Partial<CreateCustomerPayload>
@@ -135,10 +151,17 @@ export type InvoiceItem = {
   id: number
   invoiceId: number
   description: string
+  hsnCode?: string | null
   unit?: string | null
   quantity: string
   rate: string
   amount: string
+  discount: string
+  taxableValue: string
+  gstRate: string
+  cgst: string
+  sgst: string
+  igst: string
 }
 
 export type Invoice = {
@@ -148,11 +171,19 @@ export type Invoice = {
   invoiceNumber: string
   invoiceDate: string
   subtotal: string
+  // Total GST = cgstTotal + sgstTotal + igstTotal. Pre-GST invoices keep their flat tax here.
   tax: string
   discount: string
+  taxableValue: string
+  cgstTotal: string
+  sgstTotal: string
+  igstTotal: string
+  roundOff: string
+  placeOfSupply?: string | null
+  isIntraState: boolean
   grandTotal: string
   receivedAmount: string
-  balanceDue: number
+  balanceDue: string
   status: InvoiceStatus
   amountInWords?: string | null
   // Reference fields
@@ -171,24 +202,26 @@ export type Invoice = {
   termsAndConditions?: string | null
   notes?: string | null
   authorizedSignatory?: string | null
+  deletedAt?: string | null
   createdAt: string
   updatedAt: string
-  customer?: { id: number; name: string; email?: string | null; phone?: string | null; address?: string | null; gstNumber?: string | null }
+  customer?: { id: number; name: string; email?: string | null; phone?: string | null; address?: string | null; gstNumber?: string | null; stateCode?: string | null }
   items?: InvoiceItem[]
 }
 
 export type InvoiceItemPayload = {
   description: string
+  hsnCode?: string | null
   unit?: string | null
   quantity: number
   rate: number
+  gstRate?: number
 }
 
 export type CreateInvoicePayload = {
   customerId: number
   invoiceDate?: string
   items: InvoiceItemPayload[]
-  tax?: number
   discount?: number
   receivedAmount?: number
   challanNo?: string | null

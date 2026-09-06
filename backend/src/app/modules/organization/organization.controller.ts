@@ -2,11 +2,12 @@ import { Request, Response } from "express";
 import httpStatus from "http-status";
 import catchAsync from "@/shared/catchAsync";
 import sendResponse from "@/shared/sendResponse";
+import ApiError from "@/app/errors/ApiError";
+import { discardUpload } from "@/helpers/multer";
 import { OrgService } from "./organization.service";
 
 const createOrganization = catchAsync(async (req: Request, res: Response) => {
-  const ownerId = (req as any).user.id as number;
-  const result = await OrgService.createOrganization(ownerId, req.body);
+  const result = await OrgService.createOrganization(req.user!.id, req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -17,8 +18,7 @@ const createOrganization = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getMyOrganizations = catchAsync(async (req: Request, res: Response) => {
-  const ownerId = (req as any).user.id as number;
-  const result = await OrgService.getMyOrganizations(ownerId);
+  const result = await OrgService.getMyOrganizations(req.user!.id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -30,7 +30,7 @@ const getMyOrganizations = catchAsync(async (req: Request, res: Response) => {
 
 const getOrganizationById = catchAsync(async (req: Request, res: Response) => {
   // org already fetched & verified by ownershipGuard
-  const result = (req as any).org;
+  const result = req.org;
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -66,16 +66,20 @@ const deleteOrganization = catchAsync(async (req: Request, res: Response) => {
 
 const uploadLogo = catchAsync(async (req: Request, res: Response) => {
   if (!req.file) {
-    return sendResponse(res, {
-      statusCode: httpStatus.BAD_REQUEST,
-      success: false,
-      message: "No file uploaded",
-      data: null,
-    });
+    throw new ApiError(httpStatus.BAD_REQUEST, "No file uploaded");
   }
 
   const id = Number(req.params.id);
-  const result = await OrgService.updateLogo(id, req.file.filename);
+
+  let result;
+  try {
+    result = await OrgService.updateLogo(id, req.file.filename);
+  } catch (error) {
+    // The bytes are already on disk; do not leave them there if the record never
+    // came to reference them.
+    discardUpload(req.file);
+    throw error;
+  }
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

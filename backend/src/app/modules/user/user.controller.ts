@@ -40,7 +40,8 @@ const getUserById = catchAsync(async (req: Request, res: Response) => {
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.updateUser(
     Number(req.params.id),
-    req.body
+    req.body,
+    req.user!.id
   );
 
   sendResponse(res, {
@@ -52,7 +53,7 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 const deleteUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.deleteUser(Number(req.params.id));
+  const result = await UserService.deleteUser(Number(req.params.id), req.user!.id);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

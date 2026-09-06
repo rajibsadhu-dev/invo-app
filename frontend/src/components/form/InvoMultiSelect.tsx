@@ -49,7 +49,10 @@ export function InvoMultiSelect<T extends FieldValues>({
           }
         }
 
-        const remove = (value: string, e: React.MouseEvent) => {
+        const remove = (
+          value: string,
+          e: React.MouseEvent | React.KeyboardEvent
+        ) => {
           e.stopPropagation()
           field.onChange(selected.filter((v) => v !== value))
         }
@@ -86,7 +89,7 @@ export function InvoMultiSelect<T extends FieldValues>({
                         role="button"
                         tabIndex={0}
                         onClick={(e) => remove(v, e)}
-                        onKeyDown={(e) => e.key === "Enter" && remove(v, e as any)}
+                        onKeyDown={(e) => e.key === "Enter" && remove(v, e)}
                         className="cursor-pointer rounded-sm opacity-70 hover:opacity-100"
                       >
                         <X className="size-3" />

@@ -65,12 +65,17 @@ model Organization {
   logo              String?
   registerNumber    String?  @map("register_number")
   gstNumber         String?  @map("gst_number")
+  /// Two-digit GST state code of the supplier (e.g. "27" = Maharashtra).
+  /// Required before any GST-rated invoice can be raised.
+  stateCode         String?  @map("state_code") @db.VarChar(2)
   invoicePrefix     String   @default("INV") @map("invoice_prefix")
   nextInvoiceNumber Int      @default(1) @map("next_invoice_number")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  // Restrict, not Cascade: deleting a user must never take an organization — and with it
+  // every invoice ever raised — down with it. Reassign ownership first.
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   customers Customer[]
   invoices  Invoice[]
 
@@ -85,12 +90,15 @@ model Customer {
   phone          String?
   address        String?  @db.Text
   gstNumber      String?  @map("gst_number")
+  /// Two-digit GST state code of the recipient. Determines intra- vs inter-state supply.
+  stateCode      String?  @map("state_code") @db.VarChar(2)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invoices     Invoice[]
 
+  @@index([organizationId, name])
   @@map("customers")
 }
 
@@ -100,9 +108,24 @@ model Invoice {
   customerId          Int            @map("customer_id")
   invoiceNumber       String         @map("invoice_number")
   invoiceDate         DateTime       @default(now()) @map("invoice_date")
+  /// Sum of line amounts, before discount and before tax.
   subtotal            Decimal        @db.Decimal(12, 2)
+  /// Total GST charged = cgstTotal + sgstTotal + igstTotal.
+  /// Invoices raised before the GST migration retain their original flat tax amount here.
   tax                 Decimal        @default(0) @db.Decimal(12, 2)
   discount            Decimal        @default(0) @db.Decimal(12, 2)
+  /// subtotal − discount: the value GST is actually charged on.
+  taxableValue        Decimal        @default(0) @map("taxable_value") @db.Decimal(12, 2)
+  cgstTotal           Decimal        @default(0) @map("cgst_total") @db.Decimal(12, 2)
+  sgstTotal           Decimal        @default(0) @map("sgst_total") @db.Decimal(12, 2)
+  igstTotal           Decimal        @default(0) @map("igst_total") @db.Decimal(12, 2)
+  /// Difference between the computed total and the rupee it was rounded to.
+  roundOff            Decimal        @default(0) @map("round_off") @db.Decimal(6, 2)
+  /// Two-digit state code of the place of supply, frozen at issue time so a later
+  /// change to the customer's address cannot rewrite history.
+  placeOfSupply       String?        @map("place_of_supply") @db.VarChar(2)
+  /// True when supplier and recipient are in the same state (CGST + SGST rather than IGST).
+  isIntraState        Boolean        @default(true) @map("is_intra_state")
   grandTotal          Decimal        @map("grand_total") @db.Decimal(12, 2)
   receivedAmount      Decimal        @default(0) @map("received_amount") @db.Decimal(12, 2)
   status              InvoiceStatus  @default(draft)
@@ -123,6 +146,8 @@ model Invoice {
   termsAndConditions  String?        @map("terms_and_conditions") @db.Text
   notes               String?        @db.Text
   authorizedSignatory String?        @map("authorized_signatory")
+  /// Soft delete. Invoices are financial records: they are withdrawn, never destroyed.
+  deletedAt           DateTime?      @map("deleted_at")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
@@ -131,19 +156,36 @@ model Invoice {
   items        InvoiceItem[]
 
   @@unique([organizationId, invoiceNumber])
+  @@index([organizationId, status, invoiceDate])
+  @@index([organizationId, deletedAt])
+  @@index([customerId])
   @@map("invoices")
 }
 
 model InvoiceItem {
-  id          Int     @id @default(autoincrement())
-  invoiceId   Int     @map("invoice_id")
-  description String
-  unit        String?
-  quantity    Decimal @db.Decimal(10, 2)
-  rate        Decimal @db.Decimal(12, 2)
-  amount      Decimal @db.Decimal(12, 2)
+  id           Int     @id @default(autoincrement())
+  invoiceId    Int     @map("invoice_id")
+  description  String
+  /// HSN (goods) or SAC (services) code. Mandatory above the turnover threshold.
+  hsnCode      String? @map("hsn_code") @db.VarChar(8)
+  unit         String?
+  quantity     Decimal @db.Decimal(10, 3)
+  /// GST-exclusive unit price.
+  rate         Decimal @db.Decimal(12, 2)
+  /// quantity x rate, before any discount.
+  amount       Decimal @db.Decimal(12, 2)
+  /// This line's share of the invoice-level discount, apportioned pro rata.
+  discount     Decimal @default(0) @db.Decimal(12, 2)
+  /// amount − discount: what GST is charged on for this line.
+  taxableValue Decimal @default(0) @map("taxable_value") @db.Decimal(12, 2)
+  /// GST percentage for this line (0, 5, 12, 18, 28...).
+  gstRate      Decimal @default(0) @map("gst_rate") @db.Decimal(5, 2)
+  cgst         Decimal @default(0) @db.Decimal(12, 2)
+  sgst         Decimal @default(0) @db.Decimal(12, 2)
+  igst         Decimal @default(0) @db.Decimal(12, 2)
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
+  @@index([invoiceId])
   @@map("invoice_items")
 }

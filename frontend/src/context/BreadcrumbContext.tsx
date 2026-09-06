@@ -1,28 +1,8 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type Dispatch,
-  type SetStateAction,
-  type ReactNode,
-} from "react"
+import { useState, type ReactNode } from "react"
+import { BreadcrumbContext, type Crumb } from "./breadcrumbStore"
 
-export type Crumb = {
-  label: string
-  to?: string
-}
-
-type BreadcrumbContextValue = {
-  crumbs: Crumb[]
-  setCrumbs: Dispatch<SetStateAction<Crumb[]>>
-}
-
-const BreadcrumbContext = createContext<BreadcrumbContextValue>({
-  crumbs: [],
-  setCrumbs: () => {},
-})
-
+// The context, hooks and types live in ./breadcrumbStore so this file exports only a
+// component — a file that mixes the two breaks React Fast Refresh.
 export function BreadcrumbProvider({ children }: { children: ReactNode }) {
   const [crumbs, setCrumbs] = useState<Crumb[]>([])
   return (
@@ -30,20 +10,4 @@ export function BreadcrumbProvider({ children }: { children: ReactNode }) {
       {children}
     </BreadcrumbContext.Provider>
   )
-}
-
-/** Call this in a page to set its breadcrumbs. Cleared on unmount. */
-export function useBreadcrumbs(crumbs: Crumb[]) {
-  const { setCrumbs } = useContext(BreadcrumbContext)
-  // Stringify to avoid re-running on every render
-  const key = JSON.stringify(crumbs)
-  useEffect(() => {
-    setCrumbs(crumbs)
-    return () => setCrumbs([])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
-}
-
-export function useBreadcrumbItems() {
-  return useContext(BreadcrumbContext).crumbs
 }

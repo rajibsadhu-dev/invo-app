@@ -50,8 +50,9 @@ import {
   useDeleteCustomerMutation,
 } from "@/features/customer/customerApi"
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { Customer } from "@/types"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,11 @@ const customerSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   gstNumber: z.string().optional(),
+  stateCode: z
+    .string()
+    .regex(/^\d{2}$/, "Two-digit GST state code (e.g. 27)")
+    .optional()
+    .or(z.literal("")),
 })
 
 type CustomerForm = z.infer<typeof customerSchema>
@@ -72,7 +78,7 @@ function AddCustomerDialog({ orgId, open, onOpenChange }: { orgId: number; open:
 
   const form = useForm<CustomerForm>({
     resolver: zodResolver(customerSchema),
-    defaultValues: { name: "", email: "", phone: "", address: "", gstNumber: "" },
+    defaultValues: { name: "", email: "", phone: "", address: "", gstNumber: "", stateCode: "" },
   })
 
   const onSubmit = async (values: CustomerForm) => {
@@ -85,13 +91,14 @@ function AddCustomerDialog({ orgId, open, onOpenChange }: { orgId: number; open:
           phone: values.phone || undefined,
           address: values.address || undefined,
           gstNumber: values.gstNumber || undefined,
+          stateCode: values.stateCode || undefined,
         },
       }).unwrap()
       toast.success("Customer created successfully")
       onOpenChange(false)
       form.reset()
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to create customer")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to create customer"))
     }
   }
 
@@ -109,6 +116,13 @@ function AddCustomerDialog({ orgId, open, onOpenChange }: { orgId: number; open:
           </div>
           <InvoInput control={form.control} name="address" label="Address" />
           <InvoInput control={form.control} name="gstNumber" label="GST Number" />
+          <InvoInput
+            control={form.control}
+            name="stateCode"
+            label="GST State Code"
+            placeholder="e.g. 27"
+            description="Two digits — required for GST invoices"
+          />
           <DialogFooter className="mt-1">
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="animate-spin" />} Add Customer
@@ -143,6 +157,7 @@ function EditCustomerDialog({
       phone: customer.phone ?? "",
       address: customer.address ?? "",
       gstNumber: customer.gstNumber ?? "",
+      stateCode: customer.stateCode ?? "",
     },
   })
 
@@ -157,12 +172,13 @@ function EditCustomerDialog({
           phone: values.phone || undefined,
           address: values.address || undefined,
           gstNumber: values.gstNumber || undefined,
+          stateCode: values.stateCode || undefined,
         },
       }).unwrap()
       toast.success("Customer updated successfully")
       onOpenChange(false)
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to update customer")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update customer"))
     }
   }
 
@@ -180,6 +196,13 @@ function EditCustomerDialog({
           </div>
           <InvoInput control={form.control} name="address" label="Address" />
           <InvoInput control={form.control} name="gstNumber" label="GST Number" />
+          <InvoInput
+            control={form.control}
+            name="stateCode"
+            label="GST State Code"
+            placeholder="e.g. 27"
+            description="Two digits — required for GST invoices"
+          />
           <DialogFooter className="mt-1">
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="animate-spin" />} Save changes
@@ -237,8 +260,8 @@ export default function CustomersPage() {
     try {
       await deleteCustomer({ orgId: id, customerId }).unwrap()
       toast.success("Customer deleted")
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to delete customer")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to delete customer"))
     }
   }
 

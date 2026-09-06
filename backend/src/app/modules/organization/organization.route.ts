@@ -41,16 +41,14 @@ router.use("/:id/customers", ownershipGuard, CustomerRoutes);
 // Invoice routes — ownership verified once, then delegated
 router.use("/:id/invoices", ownershipGuard, InvoiceRoutes);
 
-// Logo upload — multer runs before ownershipGuard so req.file is available
+// Logo upload — ownershipGuard runs FIRST so an unauthorized request is rejected before
+// multer writes anything to disk. It only needs req.params.id, never the body.
 router.post(
   "/:id/logo",
-  (req: Request, res: Response, next: NextFunction) => {
-    uploadLogo(req, res, (err) => {
-      if (err) return next(err);
-      next();
-    });
-  },
   ownershipGuard,
+  (req: Request, res: Response, next: NextFunction) => {
+    uploadLogo(req, res, (err) => (err ? next(err) : next()));
+  },
   OrgController.uploadLogo
 );
 

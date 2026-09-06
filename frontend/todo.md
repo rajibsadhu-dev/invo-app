@@ -68,3 +68,19 @@
 - [ ] Invoice status breakdown (pie/donut chart)
 - [ ] Top 5 customers by revenue
 - [ ] Month-over-month comparison
+
+## Phase 8: Hardening + GST (2026-09-06) — see /IMPROVEMENTS.md
+- [x] Access token no longer persisted to localStorage (XSS exposure)
+- [x] AuthBootstrap restores the session from the httpOnly refresh cookie on load
+- [x] Refresh calls serialized (rotation makes parallel refreshes look like a replay)
+- [x] Profile edit + change password via /auth/me (was 403 for every non-superadmin)
+- [x] Removed the duplicated amount-in-words; shared src/lib/money.ts mirrors the backend
+- [x] Per-line HSN/SAC + GST rate in the invoice form
+- [x] Live CGST/SGST/IGST/round-off preview matching the server exactly (no clamping)
+- [x] GST state code on organization and customer forms
+- [x] Invoice detail + print template show the full GST breakdown
+- [x] Status dropdown only offers legal transitions; Edit disabled outside draft
+- [x] Lint 37 errors → 0 (shared getApiErrorMessage, context/schema splits)
+- [ ] `npm run typecheck` is a no-op under project references — change it to `tsc -b`
+- [ ] Bundle is 878 kB; route-level code splitting
+- [ ] Phase 7 dashboard analytics (unchanged, still pending)

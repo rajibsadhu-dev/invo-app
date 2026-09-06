@@ -62,3 +62,37 @@
 - [ ] GET /revenue-over-time — monthly revenue for last N months
 - [ ] GET /top-customers — top 5 customers by paid invoice revenue
 - [ ] GET /status-breakdown — invoice count by status
+
+## Phase 7: Hardening + GST (2026-09-06) — see /IMPROVEMENTS.md
+- [x] Zod-validated env config; fail fast on missing/weak/duplicate JWT secrets
+- [x] Expired/invalid JWT returns 401 (was 500 — broke the client refresh flow)
+- [x] helmet, compression, 1MB body cap, CORS allowlist, trust proxy
+- [x] Rate limiting on /auth (10/15min per IP+email) + global API ceiling
+- [x] Uniform login error + dummy bcrypt compare (no account enumeration)
+- [x] Self-service: PATCH /auth/me, POST /auth/change-password (revokes all sessions)
+- [x] Refresh token rotation + replay detection + expired-token sweep
+- [x] ownershipGuard runs before multer; orphaned uploads cleaned up
+- [x] Last-superadmin and self-deletion guards on user routes
+- [x] Express Request type augmentation (no more `(req as any).user`)
+- [x] All invoice money arithmetic in Prisma.Decimal
+- [x] Indian amount-in-words (crore/lakh, Rupees/Paise) — single source of truth
+- [x] Invoice numbering: increment-first (no concurrent duplicate reads)
+- [x] Invoice status state machine + edits frozen outside draft
+- [x] Cross-field money validation (discount, received, paid-with-balance)
+- [x] Invoice soft delete; owner FK Restrict; org delete blocked when invoices exist
+- [x] Pagination capped at 100; invoice list no longer eager-loads line items
+- [x] Single-origin SPA serving from public/ with history fallback
+- [x] GST: HSN/SAC + per-line rate, CGST/SGST/IGST split, round-off, place of supply
+- [x] Migration written: 20260906000000_gst_hsn_and_soft_delete
+- [x] Fixed GST backfill: discount residual now assigned to the last line (was off by 0.01)
+- [x] Migration applied + verified on local MySQL 8.0 with seeded legacy data
+- [x] End-to-end verified against a real DB (39 assertions: GST split, status machine, soft delete)
+- [x] Local dev switched to localhost MySQL; Hostinger URL kept commented for deploys
+- [ ] **APPLY the migration to production** (back up first)
+- [ ] Whitelist the current IP in Hostinger hPanel → Remote MySQL when prod access is needed
+- [ ] **Rotate superadmin password** (hash was committed in files/invo_sql_data.sql)
+- [ ] Set JWT_EXPIRES_IN=15m now that refresh works (currently 1d)
+- [ ] Add ESLint config (lint:check currently fails — no config, no dependency)
+- [ ] Add Vitest + Supertest; cover the money/GST/auth paths above
+- [ ] Structured logging (pino), readiness probe, graceful shutdown
+- [ ] Diff invoice line items on update instead of delete + recreate

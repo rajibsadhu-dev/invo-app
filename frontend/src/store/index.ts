@@ -16,7 +16,11 @@ import { baseApi } from "@/services/baseApi"
 const authPersistConfig = {
   key: "auth",
   storage,
-  whitelist: ["user", "accessToken"],
+  // Only the user profile is persisted, for instant UI hydration on reload.
+  // The access token is deliberately NOT stored: localStorage is readable by any
+  // script on the page, so persisting it hands a bearer token to any XSS. It lives in
+  // memory only and is re-obtained from the httpOnly refresh cookie on boot.
+  whitelist: ["user"],
 }
 
 const rootReducer = combineReducers({

@@ -1,96 +1,22 @@
 import { useFieldArray, useWatch, type UseFormReturn } from "react-hook-form"
 import { PlusIcon, Trash2 } from "lucide-react"
-import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { InvoCombobox } from "@/components/form"
-import type { Option } from "@/components/form"
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
-
-export const lineItemSchema = z.object({
-  description: z.string().min(1, "Required"),
-  unit: z.string().optional(),
-  quantity: z.coerce.number().positive("Must be > 0"),
-  rate: z.coerce.number().positive("Must be > 0"),
-})
-
-export const invoiceFormSchema = z.object({
-  customerId: z.coerce.number().positive("Customer is required"),
-  invoiceDate: z.string().min(1, "Date is required"),
-  items: z.array(lineItemSchema).min(1, "At least one item required"),
-  tax: z.coerce.number().min(0).optional(),
-  discount: z.coerce.number().min(0).optional(),
-  receivedAmount: z.coerce.number().min(0).optional(),
-  // Reference fields
-  challanNo: z.string().optional(),
-  vehicleNo: z.string().optional(),
-  siteLocation: z.string().optional(),
-  billingAddress: z.string().optional(),
-  referenceNumber: z.string().optional(),
-  // Payment
-  paymentMethod: z.enum(["cash", "bank", "upi"]).optional().nullable(),
-  bankName: z.string().optional(),
-  bankAccount: z.string().optional(),
-  bankIfsc: z.string().optional(),
-  transactionNumber: z.string().optional(),
-  // Footer
-  termsAndConditions: z.string().optional(),
-  notes: z.string().optional(),
-  authorizedSignatory: z.string().optional(),
-})
-
-export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>
-
-const UNIT_OPTIONS = ["pcs", "nos", "kg", "ton", "ltr", "m", "sqft", "rft", "box", "set", "hr"]
-
-const UNIT_KEY = "invo_default_unit"
-const getDefaultUnit = () => localStorage.getItem(UNIT_KEY) ?? ""
-const saveDefaultUnit = (unit: string) => {
-  if (unit) localStorage.setItem(UNIT_KEY, unit)
-  else localStorage.removeItem(UNIT_KEY)
-}
-
-export function todayString() {
-  return new Date().toISOString().split("T")[0]
-}
-
-// ─── Amount in words ──────────────────────────────────────────────────────────
-
-const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
-  "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
-  "Seventeen", "Eighteen", "Nineteen"]
-const tensArr = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
-
-function chunkToWords(n: number): string {
-  if (n === 0) return ""
-  if (n < 20) return ones[n]
-  if (n < 100) return tensArr[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "")
-  return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + chunkToWords(n % 100) : "")
-}
-
-export function amountInWords(amount: number): string {
-  if (amount <= 0) return "Zero Only"
-  const int = Math.floor(amount)
-  const dec = Math.round((amount - int) * 100)
-  const groups = [
-    { d: 1_000_000_000, l: "Billion" }, { d: 1_000_000, l: "Million" },
-    { d: 1_000, l: "Thousand" }, { d: 1, l: "" },
-  ]
-  let words = ""
-  let rem = int
-  for (const { d, l } of groups) {
-    if (rem >= d) {
-      words += (words ? " " : "") + chunkToWords(Math.floor(rem / d)) + (l ? " " + l : "")
-      rem %= d
-    }
-  }
-  if (dec > 0) words += " and " + chunkToWords(dec) + " Paise"
-  return words + " Only"
-}
+import { amountInWords, computeInvoiceTotals, formatINR } from "@/lib/money"
+import {
+  GST_RATES,
+  UNIT_OPTIONS,
+  getDefaultGstRate,
+  getDefaultUnit,
+  saveDefaultGstRate,
+  saveDefaultUnit,
+  type InvoiceFormValues,
+} from "./invoiceForm.schema"
+import type { Customer } from "@/types"
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
 
@@ -117,27 +43,52 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 type Props = {
   form: UseFormReturn<InvoiceFormValues>
-  customerOptions: Option[]
+  customers: Customer[]
+  /** Supplier's GST state code — compared with the customer's to pick CGST+SGST vs IGST. */
+  orgStateCode?: string | null
   isSubmitting: boolean
   submitLabel: string
 }
 
-export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitLabel }: Props) {
+export function InvoiceFormFields({
+  form,
+  customers,
+  orgStateCode,
+  isSubmitting,
+  submitLabel,
+}: Props) {
   const { control, register, watch, formState: { errors } } = form
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" })
 
   const watchedItems = useWatch({ control, name: "items" }) ?? []
-  const watchedTax = useWatch({ control, name: "tax" }) ?? 0
   const watchedDiscount = useWatch({ control, name: "discount" }) ?? 0
   const watchedReceived = useWatch({ control, name: "receivedAmount" }) ?? 0
+  const watchedCustomerId = useWatch({ control, name: "customerId" })
   const paymentMethod = watch("paymentMethod")
 
-  const subtotal = watchedItems.reduce((sum, item) => {
-    return sum + (Number(item?.quantity) || 0) * (Number(item?.rate) || 0)
-  }, 0)
-  const grandTotal = Math.max(0, subtotal + Number(watchedTax) - Number(watchedDiscount))
-  const balanceDue = Math.max(0, grandTotal - Number(watchedReceived))
+  const customerOptions = customers.map((c) => ({
+    value: String(c.id),
+    label: c.name,
+  }))
+
+  const selectedCustomer = customers.find((c) => c.id === Number(watchedCustomerId))
+  const customerStateCode = selectedCustomer?.stateCode ?? null
+  // Same state -> CGST + SGST; different -> IGST. Unknown codes fall back to intra-state,
+  // which is also what the server assumes while every line is 0% GST.
+  const isIntraState =
+    !orgStateCode || !customerStateCode || orgStateCode === customerStateCode
+
+  const hasGst = watchedItems.some((item) => Number(item?.gstRate) > 0)
+  const missingStateCode = hasGst && (!orgStateCode || !customerStateCode)
+
+  // Mirrors the server exactly — no clamping here, or the preview would disagree with
+  // what actually gets saved.
+  const totals = computeInvoiceTotals(watchedItems, {
+    discount: Number(watchedDiscount) || 0,
+    isIntraState,
+  })
+  const balanceDue = totals.grandTotal - (Number(watchedReceived) || 0)
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,7 +120,16 @@ export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitL
           <FieldLabel>Items</FieldLabel>
           <Button
             type="button" size="sm" variant="outline"
-            onClick={() => append({ description: "", unit: getDefaultUnit(), quantity: 1, rate: 0 })}
+            onClick={() =>
+              append({
+                description: "",
+                hsnCode: "",
+                unit: getDefaultUnit(),
+                quantity: 1,
+                rate: 0,
+                gstRate: getDefaultGstRate(),
+              })
+            }
           >
             <PlusIcon className="h-3.5 w-3.5" /> Add Item
           </Button>
@@ -184,9 +144,11 @@ export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitL
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
+                <th className="w-24 px-3 py-2 text-left font-medium text-muted-foreground">HSN/SAC</th>
                 <th className="w-20 px-3 py-2 text-left font-medium text-muted-foreground">Unit</th>
                 <th className="w-20 px-3 py-2 text-left font-medium text-muted-foreground">Qty</th>
                 <th className="w-28 px-3 py-2 text-left font-medium text-muted-foreground">Rate (₹)</th>
+                <th className="w-20 px-3 py-2 text-left font-medium text-muted-foreground">GST %</th>
                 <th className="w-28 px-3 py-2 text-right font-medium text-muted-foreground">Amount (₹)</th>
                 <th className="w-10" />
               </tr>
@@ -194,7 +156,7 @@ export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitL
             <tbody className="divide-y">
               {fields.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-center text-xs text-muted-foreground">
+                  <td colSpan={8} className="px-3 py-4 text-center text-xs text-muted-foreground">
                     No items yet — click "Add Item"
                   </td>
                 </tr>
@@ -212,6 +174,17 @@ export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitL
                       />
                       {errors.items?.[index]?.description && (
                         <p className="text-xs text-destructive">{errors.items[index]!.description!.message}</p>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      <Input
+                        {...register(`items.${index}.hsnCode`)}
+                        placeholder="e.g. 7308"
+                        inputMode="numeric"
+                        className="h-8 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0"
+                      />
+                      {errors.items?.[index]?.hsnCode && (
+                        <p className="text-xs text-destructive">{errors.items[index]!.hsnCode!.message}</p>
                       )}
                     </td>
                     <td className="px-3 py-1.5">
@@ -248,8 +221,29 @@ export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitL
                         className="h-8 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0"
                       />
                     </td>
+                    <td className="px-3 py-1.5">
+                      {(() => {
+                        const gstReg = register(`items.${index}.gstRate`)
+                        return (
+                          <select
+                            {...gstReg}
+                            onChange={(e) => {
+                              gstReg.onChange(e)
+                              saveDefaultGstRate(Number(e.target.value))
+                            }}
+                            className="h-8 w-full cursor-pointer border-0 bg-white px-2 text-sm text-black outline-none focus:ring-0"
+                          >
+                            {GST_RATES.map((r) => (
+                              <option key={r} value={r}>
+                                {r}%
+                              </option>
+                            ))}
+                          </select>
+                        )
+                      })()}
+                    </td>
                     <td className="px-3 py-1.5 text-right font-medium">
-                      ₹ {(qty * rate).toFixed(2)}
+                      {formatINR(qty * rate)}
                     </td>
                     <td className="px-2 py-1.5">
                       <Button
@@ -268,41 +262,83 @@ export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitL
         </div>
       </div>
 
-      {/* ── Tax & Discount ── */}
+      {/* ── Discount (GST comes from the per-line slabs) ── */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>GST / Tax (₹)</FieldLabel>
-          <Input {...register("tax")} type="number" min="0" step="any" placeholder="0.00" />
-        </div>
         <div className="flex flex-col gap-1.5">
           <FieldLabel>Discount (₹)</FieldLabel>
           <Input {...register("discount")} type="number" min="0" step="any" placeholder="0.00" />
+          <p className="text-xs text-muted-foreground">
+            Applied across all lines pro rata, before GST.
+          </p>
         </div>
       </div>
+
+      {missingStateCode && (
+        <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          A GST state code is missing on{" "}
+          {!orgStateCode ? "this organization" : "the selected customer"}. Set it before
+          saving — GST cannot be split into CGST/SGST or IGST without it.
+        </p>
+      )}
 
       {/* ── Totals Summary ── */}
       <div className="rounded-lg border bg-muted/20 p-4">
         <div className="flex flex-col gap-1.5 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>₹ {subtotal.toFixed(2)}</span>
+            <span>{formatINR(totals.subtotal)}</span>
           </div>
+          {totals.discount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Discount</span>
+              <span>− {formatINR(totals.discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
-            <span className="text-muted-foreground">GST / Tax</span>
-            <span>+ ₹ {Number(watchedTax || 0).toFixed(2)}</span>
+            <span className="text-muted-foreground">Taxable Value</span>
+            <span>{formatINR(totals.taxableValue)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Discount</span>
-            <span>− ₹ {Number(watchedDiscount || 0).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between border-t pt-1.5 font-semibold text-base">
+          {isIntraState ? (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">CGST</span>
+                <span>+ {formatINR(totals.cgstTotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">SGST</span>
+                <span>+ {formatINR(totals.sgstTotal)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">IGST</span>
+              <span>+ {formatINR(totals.igstTotal)}</span>
+            </div>
+          )}
+          {totals.roundOff !== 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Round Off</span>
+              <span>
+                {totals.roundOff < 0 ? "− " : "+ "}
+                {formatINR(Math.abs(totals.roundOff))}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between border-t pt-1.5 text-base font-semibold">
             <span>Grand Total</span>
-            <span>₹ {grandTotal.toFixed(2)}</span>
+            <span>{formatINR(totals.grandTotal)}</span>
           </div>
         </div>
-        {grandTotal > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground italic">{amountInWords(grandTotal)}</p>
+        {totals.grandTotal > 0 && (
+          <p className="mt-2 text-xs italic text-muted-foreground">
+            {amountInWords(totals.grandTotal)}
+          </p>
         )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          {isIntraState
+            ? "Intra-state supply — GST split as CGST + SGST."
+            : "Inter-state supply — GST charged as IGST."}
+        </p>
       </div>
 
       {/* ── Additional Details ── */}
@@ -421,16 +457,28 @@ export function InvoiceFormFields({ form, customerOptions, isSubmitting, submitL
         <div className="flex justify-end gap-6 rounded-lg border px-4 py-2.5 text-sm">
           <div className="flex gap-2">
             <span className="text-muted-foreground">Received</span>
-            <span>₹ {Number(watchedReceived).toFixed(2)}</span>
+            <span>{formatINR(Number(watchedReceived))}</span>
           </div>
           <div className="flex gap-2 font-semibold">
             <span>Balance Due</span>
-            <span>₹ {balanceDue.toFixed(2)}</span>
+            <span className={balanceDue < 0 ? "text-destructive" : undefined}>
+              {formatINR(balanceDue)}
+            </span>
           </div>
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting} className="self-end">
+      {balanceDue < 0 && (
+        <p className="self-end text-sm text-destructive">
+          Received amount exceeds the invoice total.
+        </p>
+      )}
+
+      <Button
+        type="submit"
+        disabled={isSubmitting || balanceDue < 0 || missingStateCode}
+        className="self-end"
+      >
         {submitLabel}
       </Button>
     </div>

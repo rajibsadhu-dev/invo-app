@@ -1,15 +1,29 @@
 import { z } from "zod";
 
+/** GST slabs in force. A free-form percentage would produce unfilable returns. */
+export const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28] as const;
+
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
+  hsnCode: z
+    .string()
+    .regex(/^\d{4,8}$/, "HSN/SAC must be 4 to 8 digits")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
   unit: z.string().optional().nullable(),
   quantity: z.number().positive("Quantity must be positive"),
-  rate: z.number().positive("Rate must be positive"),
+  rate: z.number().nonnegative("Rate cannot be negative"),
+  gstRate: z
+    .number()
+    .refine((v) => (GST_RATES as readonly number[]).includes(v), {
+      message: `GST rate must be one of ${GST_RATES.join(", ")}`,
+    })
+    .optional(),
 });
 
 const optionalFields = {
   invoiceDate: z.coerce.date().optional(),
-  tax: z.number().min(0).optional(),
   discount: z.number().min(0).optional(),
   receivedAmount: z.number().min(0).optional(),
   // Reference fields

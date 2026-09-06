@@ -1,4 +1,4 @@
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { useAppSelector } from "@/store/hooks"
 
 export default function DashboardPage() {

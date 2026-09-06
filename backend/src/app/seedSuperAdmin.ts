@@ -26,19 +26,22 @@ const seedSuperAdmin = async (): Promise<void> => {
       config.bcrypt_salt_rounds
     );
 
-    // Create superadmin
-    await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         name: "Super Admin",
         email: super_admin.email,
         password: hashedPassword,
         role: "superadmin",
       },
+      select: { id: true },
     });
 
-    console.log("✅ Superadmin account seeded successfully");
+    console.log(`✅ Superadmin account seeded (id: ${created.id}). Set SUPERADMIN_ID=${created.id} in .env to protect this account.`);
   } catch (error) {
+    // Swallowing this used to hide a failed first boot: no superadmin, no way in,
+    // and nothing in the logs to say why.
     console.error("❌ Failed to seed superadmin:", error);
+    throw error;
   }
 };
 

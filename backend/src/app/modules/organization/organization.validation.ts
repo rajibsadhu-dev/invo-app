@@ -8,6 +8,11 @@ const createOrgSchema = z.object({
     email: z.string().email("Invalid email").optional().or(z.literal("")),
     registerNumber: z.string().optional(),
     gstNumber: z.string().optional(),
+    stateCode: z
+      .string()
+      .regex(/^\d{2}$/, "State code must be two digits")
+      .optional()
+      .or(z.literal("")),
     invoicePrefix: z
       .string()
       .min(1, "Prefix must be at least 1 character")
@@ -24,6 +29,11 @@ const updateOrgSchema = z.object({
     email: z.string().email("Invalid email").optional().or(z.literal("")),
     registerNumber: z.string().optional(),
     gstNumber: z.string().optional(),
+    stateCode: z
+      .string()
+      .regex(/^\d{2}$/, "State code must be two digits")
+      .optional()
+      .or(z.literal("")),
     invoicePrefix: z
       .string()
       .min(1)

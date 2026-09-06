@@ -35,8 +35,9 @@ import {
   useGetMyOrganizationsQuery,
   useCreateOrganizationMutation,
 } from "@/features/org/orgApi"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { Organization } from "@/types"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,11 @@ const createOrgSchema = z.object({
   email: z.string().email("Invalid email").optional().or(z.literal("")),
   registerNumber: z.string().optional(),
   gstNumber: z.string().optional(),
+  stateCode: z
+    .string()
+    .regex(/^\d{2}$/, "Two-digit GST state code (e.g. 27)")
+    .optional()
+    .or(z.literal("")),
   invoicePrefix: z.string().max(6, "Prefix max 6 chars").optional(),
 })
 
@@ -67,6 +73,7 @@ function CreateOrgDialog() {
       email: "",
       registerNumber: "",
       gstNumber: "",
+      stateCode: "",
       invoicePrefix: "",
     },
   })
@@ -80,14 +87,15 @@ function CreateOrgDialog() {
         ...(values.email && { email: values.email }),
         ...(values.registerNumber && { registerNumber: values.registerNumber }),
         ...(values.gstNumber && { gstNumber: values.gstNumber }),
+        ...(values.stateCode && { stateCode: values.stateCode }),
         ...(values.invoicePrefix && { invoicePrefix: values.invoicePrefix }),
       }
       await createOrg(payload).unwrap()
       toast.success("Organization created successfully")
       setOpen(false)
       form.reset()
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to create organization")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to create organization"))
     }
   }
 
@@ -116,6 +124,13 @@ function CreateOrgDialog() {
           <div className="grid grid-cols-2 gap-4">
             <InvoInput control={form.control} name="registerNumber" label="Register Number" placeholder="REG-12345" />
             <InvoInput control={form.control} name="gstNumber" label="GST Number" placeholder="GST-12345" />
+            <InvoInput
+              control={form.control}
+              name="stateCode"
+              label="GST State Code"
+              placeholder="e.g. 27"
+              description="Two digits — required for GST invoices"
+            />
           </div>
           <InvoInput
             control={form.control}

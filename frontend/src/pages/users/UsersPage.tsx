@@ -21,7 +21,8 @@ import { InvoForm, InvoInput, InvoSelect } from "@/components/form"
 import {
   useGetUsersQuery, useCreateUserMutation, useUpdateUserMutation, useDeleteUserMutation,
 } from "@/features/user/userApi"
-import type { User } from "@/types"
+import type { User, UpdateUserPayload } from "@/types"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -66,8 +67,8 @@ function CreateUserDialog() {
       toast.success("User created successfully")
       setOpen(false)
       form.reset()
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to create user")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to create user"))
     }
   }
 
@@ -108,7 +109,7 @@ function EditUserDialog({
   })
 
   const onSubmit = async (values: EditForm) => {
-    const body: Record<string, any> = {
+    const body: UpdateUserPayload = {
       name: values.name,
       email: values.email,
       role: values.role,
@@ -120,8 +121,8 @@ function EditUserDialog({
       await updateUser({ id: user.id, body }).unwrap()
       toast.success("User updated successfully")
       onOpenChange(false)
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to update user")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update user"))
     }
   }
 
@@ -225,7 +226,7 @@ export default function UsersPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={() => deleteUser(user.id).unwrap().then(() => toast.success("User deleted")).catch((err: any) => toast.error(err?.data?.message ?? "Failed to delete user"))}>
+                          <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={() => deleteUser(user.id).unwrap().then(() => toast.success("User deleted")).catch((err) => toast.error(getApiErrorMessage(err, "Failed to delete user")))}>
                             {isDeleting && <Loader2 className="animate-spin" />} Delete
                           </AlertDialogAction>
                         </AlertDialogFooter>

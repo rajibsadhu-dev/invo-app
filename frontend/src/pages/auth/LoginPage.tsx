@@ -10,6 +10,7 @@ import { InvoForm, InvoInput } from "@/components/form"
 import { useLoginMutation } from "@/features/auth/authApi"
 import { setCredentials } from "@/features/auth/authSlice"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -21,7 +22,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const accessToken = useAppSelector((s) => s.auth.accessToken)
+  const user = useAppSelector((s) => s.auth.user)
   const [login, { isLoading, error }] = useLoginMutation()
 
   const form = useForm<LoginForm>({
@@ -30,8 +31,8 @@ export default function LoginPage() {
   })
 
   useEffect(() => {
-    if (accessToken) navigate("/", { replace: true })
-  }, [accessToken, navigate])
+    if (user) navigate("/", { replace: true })
+  }, [user, navigate])
 
   const onSubmit = async (values: LoginForm) => {
     try {
@@ -43,8 +44,7 @@ export default function LoginPage() {
     }
   }
 
-  const apiError =
-    error && "data" in error ? (error.data as any)?.message ?? "Login failed" : null
+  const apiError = error ? getApiErrorMessage(error, "Login failed") : null
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">

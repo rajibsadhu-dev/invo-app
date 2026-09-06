@@ -19,13 +19,15 @@ const createInvoice = catchAsync(async (req: Request, res: Response) => {
 
 const getInvoices = catchAsync(async (req: Request, res: Response) => {
   const organizationId = Number(req.params.id);
-  const { status, customerId, search, page, limit, sortBy, sortOrder } =
+  const { status, customerId, search, fromDate, toDate, page, limit, sortBy, sortOrder } =
     req.query as Record<string, string>;
 
   const result = await InvoiceService.getInvoices(organizationId, {
     status: status as InvoiceStatus | undefined,
     customerId: customerId ? Number(customerId) : undefined,
     search,
+    fromDate,
+    toDate,
     page: page ? Number(page) : undefined,
     limit: limit ? Number(limit) : undefined,
     sortBy,

@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useGetInvoicesQuery, useDeleteInvoiceMutation } from "@/features/invoice/invoiceApi"
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { InvoiceStatus } from "@/types"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 
@@ -82,8 +83,8 @@ export default function InvoicesPage() {
     try {
       await deleteInvoice({ orgId: id, invoiceId }).unwrap()
       toast.success("Invoice deleted")
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to delete invoice")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to delete invoice"))
     }
   }
 

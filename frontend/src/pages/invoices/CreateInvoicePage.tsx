@@ -7,8 +7,10 @@ import { InvoForm } from "@/components/form"
 import { useCreateInvoiceMutation } from "@/features/invoice/invoiceApi"
 import { useGetCustomersQuery } from "@/features/customer/customerApi"
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
-import { useBreadcrumbs } from "@/context/BreadcrumbContext"
-import { InvoiceFormFields, invoiceFormSchema, todayString, type InvoiceFormValues } from "./InvoiceFormFields"
+import { useBreadcrumbs } from "@/context/breadcrumbStore"
+import { InvoiceFormFields } from "./InvoiceFormFields"
+import { invoiceFormSchema, todayString, type InvoiceFormValues } from "./invoiceForm.schema"
+import { getApiErrorMessage } from "@/lib/apiError"
 
 export default function CreateInvoicePage() {
   const { orgId } = useParams<{ orgId: string }>()
@@ -26,10 +28,7 @@ export default function CreateInvoicePage() {
   ])
 
   const { data: customersData } = useGetCustomersQuery({ orgId: id, limit: 100 })
-  const customerOptions = (customersData?.data ?? []).map((c) => ({
-    value: String(c.id),
-    label: c.name,
-  }))
+  const customers = customersData?.data ?? []
 
   const [createInvoice, { isLoading }] = useCreateInvoiceMutation()
 
@@ -38,8 +37,9 @@ export default function CreateInvoicePage() {
     defaultValues: {
       customerId: 0,
       invoiceDate: todayString(),
-      items: [{ description: "", unit: "", quantity: 1, rate: 0 }],
-      tax: 0,
+      items: [
+        { description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
+      ],
       discount: 0,
       receivedAmount: 0,
       paymentMethod: null,
@@ -54,7 +54,7 @@ export default function CreateInvoicePage() {
           customerId: values.customerId,
           invoiceDate: values.invoiceDate,
           items: values.items,
-          tax: values.tax || undefined,
+          // `tax` is not sent: the server derives it from each line's GST rate.
           discount: values.discount || undefined,
           receivedAmount: values.receivedAmount || undefined,
           challanNo: values.challanNo || null,
@@ -74,8 +74,8 @@ export default function CreateInvoicePage() {
       }).unwrap()
       toast.success("Invoice created successfully")
       navigate(`/org/${id}/invoices/${result.data.id}`)
-    } catch (err: any) {
-      toast.error(err?.data?.message ?? "Failed to create invoice")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to create invoice"))
     }
   }
 
@@ -88,7 +88,8 @@ export default function CreateInvoicePage() {
       <InvoForm form={form} onSubmit={onSubmit}>
         <InvoiceFormFields
           form={form}
-          customerOptions={customerOptions}
+          customers={customers}
+          orgStateCode={org?.stateCode}
           isSubmitting={isLoading}
           submitLabel="Create Invoice"
         />
