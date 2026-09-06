@@ -1,4 +1,4 @@
-import { InvoiceStatus, PaymentMethod } from "@prisma/client";
+import { InvoiceStatus, OrgRole, PaymentMethod } from "@prisma/client";
 
 export type IInvoiceItem = {
   description: string;
@@ -48,13 +48,11 @@ export type IUpdateInvoice = IInvoiceOptionalFields & {
 };
 
 export type IInvoiceQuery = {
-  status?: InvoiceStatus;
-  customerId?: number;
+  filters?: string | string[];
   search?: string;
-  fromDate?: string;
-  toDate?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sort?: string;
+  page?: string | number;
+  limit?: string | number;
+  orgRole?: OrgRole;
+  userId?: number;
 };

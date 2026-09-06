@@ -2,6 +2,7 @@ import { NavLink, useMatch, useNavigate } from "react-router-dom"
 import {
   LayoutDashboard,
   Users,
+  UsersRound,
   FileText,
   UserRound,
   ReceiptText,
@@ -9,13 +10,15 @@ import {
   User,
   LogOut,
   ChevronUp,
+  ChevronDown,
   ShieldCheck,
+  Plus,
+  Check,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
+import { useGetMeQuery, useLogoutMutation } from "@/features/auth/authApi"
 import { clearCredentials } from "@/features/auth/authSlice"
-import { useLogoutMutation } from "@/features/auth/authApi"
 import { baseApi } from "@/services/baseApi"
 import {
   DropdownMenu,
@@ -61,18 +64,60 @@ function NavItem({
   )
 }
 
-// ─── Org Context Nav ───────────────────────────────────────────────────────────
+// ─── Org Switcher + Context Nav ──────────────────────────────────────────────
 
 function OrgContextNav({ orgId, onClose }: { orgId: number; onClose: () => void }) {
-  const { data } = useGetOrganizationByIdQuery(orgId)
-  const org = data?.data
+  const navigate = useNavigate()
+  const { data: meData } = useGetMeQuery()
+  const memberships = meData?.data?.orgMemberships ?? []
+  const currentOrg = memberships.find((m) => m.organizationId === orgId)
 
   return (
     <div className="flex flex-col gap-0.5">
-      <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 truncate">
-        {org?.name ?? "Organization"}
-      </p>
+      {memberships.length > 1 ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger className="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+              {currentOrg?.organization.name ?? "Organization"}
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            {memberships.map((m) => (
+              <DropdownMenuItem
+                key={m.organizationId}
+                onClick={() => {
+                  navigate(`/org/${m.organizationId}`)
+                  onClose()
+                }}
+              >
+                <Building2 className="mr-2 h-4 w-4" />
+                <span className="flex-1 truncate">{m.organization.name}</span>
+                {m.organizationId === orgId && (
+                  <Check className="ml-2 h-3.5 w-3.5 text-primary" />
+                )}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                navigate("/organizations")
+                onClose()
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Organization
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 truncate">
+          {currentOrg?.organization.name ?? "Organization"}
+        </p>
+      )}
       <NavItem to={`/org/${orgId}`} icon={Building2} label="Overview" exact onClick={onClose} />
+      <NavItem to={`/org/${orgId}/team`} icon={UsersRound} label="Team" onClick={onClose} />
       <NavItem to={`/org/${orgId}/customers`} icon={UserRound} label="Customers" onClick={onClose} />
       <NavItem to={`/org/${orgId}/invoices`} icon={ReceiptText} label="Invoices" onClick={onClose} />
     </div>

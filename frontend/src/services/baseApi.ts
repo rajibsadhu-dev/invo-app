@@ -104,3 +104,26 @@ export async function restoreSession(): Promise<string | null> {
     return null
   }
 }
+
+type MeUser = {
+  id: number
+  name: string
+  email: string
+  role: "superadmin" | "user"
+  phone?: string | null
+  emailVerifiedAt?: string | null
+}
+
+export async function fetchMe(accessToken: string): Promise<MeUser | null> {
+  try {
+    const res = await fetch(`${API_ROOT}/auth/me`, {
+      headers: { authorization: `Bearer ${accessToken}` },
+      credentials: "include",
+    })
+    if (!res.ok) return null
+    const json = (await res.json()) as { data?: MeUser }
+    return json?.data ?? null
+  } catch {
+    return null
+  }
+}

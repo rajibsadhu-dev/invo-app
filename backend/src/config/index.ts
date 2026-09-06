@@ -58,6 +58,12 @@ const envSchema = z
     SUPERADMIN_EMAIL: z.string().email().optional().or(z.literal("")),
     SUPERADMIN_PASSWORD: z.string().optional(),
 
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().int().positive().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    SMTP_FROM: z.string().optional(),
+
     CORS_ORIGINS: commaList,
     COOKIE_CROSS_SITE: booleanish,
     MAX_LOGO_SIZE_MB: z.coerce.number().positive().max(25).default(5),
@@ -111,6 +117,13 @@ export default {
     id: env.SUPERADMIN_ID,
     email: env.SUPERADMIN_EMAIL || "",
     password: env.SUPERADMIN_PASSWORD || "",
+  },
+  smtp: {
+    host: env.SMTP_HOST || "",
+    port: env.SMTP_PORT || 587,
+    user: env.SMTP_USER || "",
+    pass: env.SMTP_PASS || "",
+    from: env.SMTP_FROM || env.SMTP_USER || "",
   },
   cors_origins: corsOrigins,
   cookie_cross_site: env.COOKIE_CROSS_SITE,

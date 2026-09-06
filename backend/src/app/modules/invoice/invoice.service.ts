@@ -1,12 +1,38 @@
 import httpStatus from "http-status";
-import { Prisma, InvoiceStatus, Customer, Organization } from "@prisma/client";
+import { Prisma, InvoiceStatus, OrgRole, Customer, Organization } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import ApiError from "@/app/errors/ApiError";
 import { amountInWords } from "@/helpers/amountInWords";
 import { computeInvoiceTotals, dec, money, GstLineInput } from "@/helpers/gst";
+import { buildQuery, paginationMeta } from "@/helpers/queryBuilder";
 import { ICreateInvoice, IUpdateInvoice, IInvoiceQuery } from "./invoice.interface";
 
-const MAX_PAGE_SIZE = 100;
+const INVOICE_FILTER_FIELDS = [
+  "invoiceNumber",
+  "status",
+  "grandTotal",
+  "subtotal",
+  "receivedAmount",
+  "invoiceDate",
+  "customerId",
+  "createdById",
+  "paymentMethod",
+  "challanNo",
+  "vehicleNo",
+  "siteLocation",
+  "referenceNumber",
+  "createdAt",
+];
+
+const INVOICE_SORT_FIELDS = [
+  "invoiceNumber",
+  "invoiceDate",
+  "grandTotal",
+  "status",
+  "createdAt",
+  "subtotal",
+  "receivedAmount",
+];
 
 /**
  * Permitted status moves. `paid` and `cancelled` are terminal: a settled or withdrawn
@@ -43,9 +69,19 @@ const addBalanceDue = <
 });
 
 /** Soft-deleted invoices are withdrawn from every read path. */
-const findInvoice = async (organizationId: number, invoiceId: number) => {
+const findInvoice = async (
+  organizationId: number,
+  invoiceId: number,
+  orgRole?: OrgRole,
+  userId?: number
+) => {
   const invoice = await prisma.invoice.findFirst({
-    where: { id: invoiceId, organizationId, deletedAt: null },
+    where: {
+      id: invoiceId,
+      organizationId,
+      deletedAt: null,
+      ...(orgRole === "staff" && userId ? { createdById: userId } : {}),
+    },
     include: { items: true, customer: true },
   });
   if (!invoice) throw new ApiError(httpStatus.NOT_FOUND, "Invoice not found");
@@ -155,7 +191,7 @@ const pickOptionalFields = (payload: ICreateInvoice | IUpdateInvoice) => ({
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
-const createInvoice = async (organizationId: number, payload: ICreateInvoice) => {
+const createInvoice = async (organizationId: number, payload: ICreateInvoice, createdById: number) => {
   return prisma.$transaction(async (tx) => {
     const customer = await tx.customer.findFirst({
       where: { id: payload.customerId, organizationId },
@@ -198,6 +234,7 @@ const createInvoice = async (organizationId: number, payload: ICreateInvoice) =>
       data: {
         organizationId,
         customerId: payload.customerId,
+        createdById,
         invoiceNumber,
         subtotal: totals.subtotal,
         discount: totals.discount,
@@ -223,56 +260,40 @@ const createInvoice = async (organizationId: number, payload: ICreateInvoice) =>
 };
 
 const getInvoices = async (organizationId: number, query: IInvoiceQuery) => {
-  const {
-    status,
-    customerId,
-    search,
-    fromDate,
-    toDate,
-    page = 1,
-    sortBy = "invoiceDate",
-    sortOrder = "desc",
-  } = query;
+  const { search, orgRole: memberRole, userId } = query;
 
-  const limit = Math.min(Math.max(query.limit ?? 10, 1), MAX_PAGE_SIZE);
-  const currentPage = Math.max(page, 1);
-
-  const where: Prisma.InvoiceWhereInput = {
+  const baseWhere: Record<string, unknown> = {
     organizationId,
     deletedAt: null,
-    ...(status && { status }),
-    ...(customerId && { customerId }),
-    ...((fromDate || toDate) && {
-      invoiceDate: {
-        ...(fromDate && { gte: new Date(fromDate) }),
-        ...(toDate && { lte: new Date(toDate) }),
-      },
-    }),
-    ...(search && {
-      OR: [
-        { invoiceNumber: { contains: search } },
-        { customer: { name: { contains: search } } },
-      ],
-    }),
+    ...(memberRole === "staff" && userId ? { createdById: userId } : {}),
+    ...(search
+      ? {
+          OR: [
+            { invoiceNumber: { contains: search } },
+            { customer: { name: { contains: search } } },
+          ],
+        }
+      : {}),
   };
 
-  const allowedSortFields = [
-    "invoiceNumber",
-    "invoiceDate",
-    "grandTotal",
-    "status",
-    "createdAt",
-  ];
-  const orderByField = allowedSortFields.includes(sortBy) ? sortBy : "invoiceDate";
+  const { where, orderBy, skip, take, page, limit } = buildQuery({
+    filters: query.filters,
+    sort: query.sort,
+    page: query.page,
+    limit: query.limit,
+    allowedFields: INVOICE_FILTER_FIELDS,
+    allowedSortFields: INVOICE_SORT_FIELDS,
+    defaultSort: "invoiceDate",
+    defaultOrder: "desc",
+    baseWhere,
+  });
 
   const [data, total] = await Promise.all([
     prisma.invoice.findMany({
       where,
-      orderBy: { [orderByField]: sortOrder },
-      skip: (currentPage - 1) * limit,
-      take: limit,
-      // Line items are not rendered in the list — fetching them multiplied the payload
-      // by the number of lines on every page load for nothing.
+      orderBy,
+      skip,
+      take,
       include: { customer: { select: { id: true, name: true } } },
     }),
     prisma.invoice.count({ where }),
@@ -280,25 +301,27 @@ const getInvoices = async (organizationId: number, query: IInvoiceQuery) => {
 
   return {
     data: data.map(addBalanceDue),
-    meta: {
-      total,
-      page: currentPage,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
+    meta: paginationMeta(total, page, limit),
   };
 };
 
-const getInvoiceById = async (organizationId: number, invoiceId: number) => {
-  return addBalanceDue(await findInvoice(organizationId, invoiceId));
+const getInvoiceById = async (
+  organizationId: number,
+  invoiceId: number,
+  orgRole?: OrgRole,
+  userId?: number
+) => {
+  return addBalanceDue(await findInvoice(organizationId, invoiceId, orgRole, userId));
 };
 
 const updateInvoice = async (
   organizationId: number,
   invoiceId: number,
-  payload: IUpdateInvoice
+  payload: IUpdateInvoice,
+  orgRole?: OrgRole,
+  userId?: number
 ) => {
-  const existing = await findInvoice(organizationId, invoiceId);
+  const existing = await findInvoice(organizationId, invoiceId, orgRole, userId);
 
   // Once issued, an invoice's figures are fixed. Only settlement details may still move.
   if (existing.status !== "draft") {
@@ -433,8 +456,13 @@ const updateInvoice = async (
  * Soft delete. An invoice is a financial record: it is withdrawn from the working set but
  * its number stays reserved, so it can never be silently reused by a later document.
  */
-const deleteInvoice = async (organizationId: number, invoiceId: number) => {
-  const invoice = await findInvoice(organizationId, invoiceId);
+const deleteInvoice = async (
+  organizationId: number,
+  invoiceId: number,
+  orgRole?: OrgRole,
+  userId?: number
+) => {
+  const invoice = await findInvoice(organizationId, invoiceId, orgRole, userId);
 
   if (invoice.status === "paid") {
     throw new ApiError(

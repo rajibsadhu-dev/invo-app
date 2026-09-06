@@ -12,8 +12,20 @@ export type CustomerListParams = {
   search?: string
   page?: number
   limit?: number
-  sortBy?: string
-  sortOrder?: "asc" | "desc"
+  sort?: string
+  filter?: string[]
+}
+
+function buildCustomerParams(params: Omit<CustomerListParams, "orgId">) {
+  const query: Record<string, string | string[]> = {}
+
+  if (params.filter?.length) query.filter = params.filter
+  if (params.search) query.search = params.search
+  if (params.sort) query.sort = params.sort
+  if (params.page) query.page = String(params.page)
+  if (params.limit) query.limit = String(params.limit)
+
+  return query
 }
 
 export const customerApi = baseApi.injectEndpoints({
@@ -21,7 +33,7 @@ export const customerApi = baseApi.injectEndpoints({
     getCustomers: builder.query<PaginatedResponse<Customer>, CustomerListParams>({
       query: ({ orgId, ...params }) => ({
         url: `/organizations/${orgId}/customers`,
-        params,
+        params: buildCustomerParams(params),
       }),
       providesTags: (_result, _error, { orgId }) => [{ type: "Customer", id: orgId }],
     }),

@@ -11,9 +11,9 @@ export type ICreateCustomer = {
 export type IUpdateCustomer = Partial<ICreateCustomer>;
 
 export type ICustomerQuery = {
+  filters?: string | string[];
   search?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sort?: string;
+  page?: string | number;
+  limit?: string | number;
 };

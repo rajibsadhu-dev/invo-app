@@ -13,10 +13,30 @@ export type InvoiceListParams = {
   status?: InvoiceStatus
   customerId?: number
   search?: string
+  fromDate?: string
+  toDate?: string
   page?: number
   limit?: number
-  sortBy?: string
-  sortOrder?: "asc" | "desc"
+  sort?: string
+  filter?: string[]
+}
+
+function buildInvoiceParams(params: Omit<InvoiceListParams, "orgId">) {
+  const query: Record<string, string | string[]> = {}
+
+  const filters: string[] = [...(params.filter ?? [])]
+  if (params.status) filters.push(`status = '${params.status}'`)
+  if (params.customerId) filters.push(`customerId = ${params.customerId}`)
+  if (params.fromDate) filters.push(`invoiceDate >= '${params.fromDate}'`)
+  if (params.toDate) filters.push(`invoiceDate <= '${params.toDate}'`)
+
+  if (filters.length) query.filter = filters
+  if (params.search) query.search = params.search
+  if (params.sort) query.sort = params.sort
+  if (params.page) query.page = String(params.page)
+  if (params.limit) query.limit = String(params.limit)
+
+  return query
 }
 
 export const invoiceApi = baseApi.injectEndpoints({
@@ -24,7 +44,7 @@ export const invoiceApi = baseApi.injectEndpoints({
     getInvoices: builder.query<PaginatedResponse<Invoice>, InvoiceListParams>({
       query: ({ orgId, ...params }) => ({
         url: `/organizations/${orgId}/invoices`,
-        params,
+        params: buildInvoiceParams(params),
       }),
       providesTags: (_result, _error, { orgId }) => [{ type: "Invoice", id: orgId }],
     }),

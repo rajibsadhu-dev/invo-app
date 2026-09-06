@@ -8,6 +8,7 @@ type AuthUser = {
   email: string
   role: UserRole
   phone?: string | null
+  emailVerifiedAt?: string | null
 }
 
 type AuthState = {

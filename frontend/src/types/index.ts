@@ -7,14 +7,34 @@ export type ApiResponse<T> = {
 
 export type UserRole = "superadmin" | "user"
 
+export type UserOrgMembership = {
+  id: number
+  organizationId: number
+  role: OrgRole
+  organization: {
+    id: number
+    name: string
+    logo?: string | null
+  }
+}
+
 export type User = {
   id: number
   name: string
   email: string
   phone?: string | null
   role: UserRole
+  emailVerifiedAt?: string | null
+  orgMemberships?: UserOrgMembership[]
   createdAt: string
   updatedAt: string
+}
+
+export type RegisterPayload = {
+  name: string
+  email: string
+  password: string
+  orgName: string
 }
 
 export type LoginPayload = {
@@ -30,6 +50,7 @@ export type LoginData = {
     name: string
     email: string
     role: UserRole
+    emailVerifiedAt?: string | null
   }
 }
 
@@ -97,6 +118,45 @@ export type UpdateOrgPayload = Partial<CreateOrgPayload> & {
 
 export type OrganizationWithOwner = Organization & {
   owner: { id: number; name: string; email: string }
+}
+
+export type OrgRole = "owner" | "admin" | "manager" | "staff" | "viewer"
+
+export type OrgMember = {
+  id: number
+  organizationId: number
+  userId: number
+  role: OrgRole
+  createdAt: string
+  updatedAt: string
+  user: {
+    id: number
+    name: string
+    email: string
+    phone?: string | null
+  }
+}
+
+export type OrgInvite = {
+  id: number
+  organizationId: number
+  email: string
+  role: OrgRole
+  expiresAt: string
+  invitedById: number
+  createdAt: string
+  invitedBy: {
+    id: number
+    name: string
+    email: string
+  }
+}
+
+export type InviteInfo = {
+  email: string
+  role: OrgRole
+  orgName: string
+  invitedBy: string
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────

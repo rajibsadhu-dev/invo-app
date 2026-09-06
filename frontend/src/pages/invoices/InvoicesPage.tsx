@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { PlusIcon, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Eye } from "lucide-react"
+import { PlusIcon, Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Eye, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Combobox } from "@/components/ui/combobox"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
@@ -13,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useGetInvoicesQuery, useDeleteInvoiceMutation } from "@/features/invoice/invoiceApi"
+import { useGetCustomersQuery } from "@/features/customer/customerApi"
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { InvoiceStatus } from "@/types"
@@ -51,10 +54,16 @@ export default function InvoicesPage() {
 
   const [activeTab, setActiveTab] = useState<InvoiceStatus | "all">("all")
   const [page, setPage] = useState(1)
+  const [fromDate, setFromDate] = useState("")
+  const [toDate, setToDate] = useState("")
+  const [customerId, setCustomerId] = useState<string>("")
   const limit = 10
 
   const { data: orgData } = useGetOrganizationByIdQuery(id)
   const org = orgData?.data
+
+  const { data: customersData } = useGetCustomersQuery({ orgId: id, limit: 100 })
+  const customers = customersData?.data ?? []
 
   useBreadcrumbs([
     { label: "Organizations", to: "/organizations" },
@@ -65,6 +74,9 @@ export default function InvoicesPage() {
   const { data, isLoading, isError } = useGetInvoicesQuery({
     orgId: id,
     status: activeTab === "all" ? undefined : activeTab,
+    customerId: customerId ? Number(customerId) : undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
     page,
     limit,
   })
@@ -86,6 +98,14 @@ export default function InvoicesPage() {
     } catch (err) {
       toast.error(getApiErrorMessage(err, "Failed to delete invoice"))
     }
+  }
+
+  const hasFilters = fromDate || toDate || customerId
+  const clearFilters = () => {
+    setFromDate("")
+    setToDate("")
+    setCustomerId("")
+    setPage(1)
   }
 
   return (
@@ -118,6 +138,45 @@ export default function InvoicesPage() {
             {tab.label}
           </button>
         ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">From Date</label>
+          <Input
+            type="date"
+            value={fromDate}
+            onChange={(e) => { setFromDate(e.target.value); setPage(1) }}
+            className="w-40"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">To Date</label>
+          <Input
+            type="date"
+            value={toDate}
+            onChange={(e) => { setToDate(e.target.value); setPage(1) }}
+            className="w-40"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Customer</label>
+          <Combobox
+            value={customerId}
+            onChange={(v) => { setCustomerId(v); setPage(1) }}
+            options={customers.map((c) => ({ value: String(c.id), label: c.name }))}
+            placeholder="All customers"
+            searchPlaceholder="Search customers…"
+            emptyText="No customers found"
+            className="w-52"
+          />
+        </div>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+            <X className="h-3.5 w-3.5" /> Clear
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -160,7 +219,7 @@ export default function InvoicesPage() {
                 <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
                 <TableCell className="text-muted-foreground">{invoice.customer?.name ?? "—"}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {new Date(invoice.createdAt).toLocaleDateString()}
+                  {new Date(invoice.invoiceDate).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {Number(invoice.grandTotal).toFixed(2)}

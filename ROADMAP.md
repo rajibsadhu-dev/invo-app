@@ -34,90 +34,74 @@ Each phase is independently shippable.
 
 ---
 
-## Phase 1 — SaaS Foundation
+## Phase 1 — SaaS Foundation ✅
 
 > Goal: Any business can sign up, create their org, and invite team members.
+> **Completed: 2026-09-07**
 
-### 1.1 Public Registration
-- [ ] **Backend:** `POST /api/v1/auth/register` — accepts name, email, password, org name
-  - Creates user (role: `user`) + organization in a transaction
-  - Sets the user as org owner
-  - Returns access token + sets refresh cookie (auto-login after signup)
-  - Zod validation: email format, password min 8 chars, org name required
-- [ ] **Frontend:** `/register` page
-  - Form: name, email, password, confirm password, organization name
-  - Link from login page ("Don't have an account? Sign up")
-  - On success: redirect to dashboard with the new org
-- [ ] **Schema:** No migration needed — existing User + Organization models work as-is
+### 1.1 Public Registration ✅
+- [x] Backend: `POST /api/v1/auth/register` — name, email, password, org name
+  - Creates User + Organization + OrgMember (owner) in a single transaction
+  - Returns access token + sets refresh cookie
+- [x] Frontend: `/register` page with form + link from login
+- [x] Schema: No migration needed
 
-### 1.2 Email Verification
-- [ ] **Schema:** Add `emailVerifiedAt DateTime?` to User model
-- [ ] **Backend:** Email verification flow
-  - On registration, generate a signed verification token (JWT, 24h expiry)
-  - Send verification email via Nodemailer (reused in Phase 3)
-  - `GET /api/v1/auth/verify-email?token=...` — sets `emailVerifiedAt`, redirects to app
-  - `POST /api/v1/auth/resend-verification` — rate-limited (3/hour)
-  - Middleware: unverified users can log in but see a "verify your email" banner
-  - Invoice creation blocked until verified (prevents spam signups from generating documents)
-- [ ] **Frontend:** Verification banner component + resend button
-- [ ] **Config:** Add SMTP settings to `.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`)
+### 1.2 Email Verification ✅
+- [x] Schema: `emailVerifiedAt DateTime?` on User
+- [x] Backend: JWT verification token (24h), resend endpoint, verify endpoint
+- [x] Frontend: Verification banner + resend button in AppLayout
+- [x] Guard: `emailVerified` middleware blocks invoice creation until verified
+- [x] Config: SMTP settings in `.env`
 
-### 1.3 Forgot Password
-- [ ] **Backend:** Password reset flow
-  - `POST /api/v1/auth/forgot-password` — accepts email, sends reset link (signed JWT, 1h expiry)
-  - `POST /api/v1/auth/reset-password` — accepts token + new password, revokes all refresh tokens
-  - Same uniform error on missing email (no enumeration)
-- [ ] **Frontend:** `/forgot-password` and `/reset-password` pages
-  - "Forgot password?" link on login page
-  - Reset form: new password + confirm
+### 1.3 Forgot Password ✅
+- [x] Backend: forgot-password (1h JWT) + reset-password (revokes all sessions)
+- [x] Frontend: `/forgot-password` and `/reset-password` pages
+- [x] "Forgot password?" link on login page
 
-### 1.4 Org-Level Roles & Team
-- [ ] **Schema:** New `OrgMember` join table
-  ```
-  model OrgMember {
-    id             Int      @id @default(autoincrement())
-    organizationId Int      @map("organization_id")
-    userId         Int      @map("user_id")
-    role           String   @default("member") // "owner" | "admin" | "member"
-    createdAt      DateTime @default(now())
-    @@unique([organizationId, userId])
-  }
-  ```
-  - `owner` — full control (edit org, manage members, delete)
-  - `admin` — create/edit invoices, manage customers, view reports
-  - `member` — create/edit own invoices, view customers (read-only)
-- [ ] **Backend:** Rewrite `ownershipGuard` to check OrgMember instead of `org.ownerId`
-  - New middleware: `orgRole("owner", "admin")` — checks membership + minimum role
-  - Migrate existing org owners to OrgMember rows
-- [ ] **Frontend:** Team management page at `/org/:orgId/team`
-  - List members with roles
-  - Invite dialog, role assignment, remove member
+### 1.4 Org-Level Roles & Team ✅
+- [x] Schema: `OrgMember` join table + `OrgRole` enum (owner, admin, manager, staff, viewer)
+- [x] Permission map replacing linear role hierarchy (see 1.4a below)
+- [x] Backend: `ownershipGuard` rewritten for OrgMember, `orgRole()` middleware uses permissions
+- [x] Frontend: Team page with role management, role badges/icons for all 5 roles
+- [x] Backfill: server boot ensures every org owner has an OrgMember row
 
-### 1.5 Invite Team Members
-- [ ] **Backend:** Invite flow
-  - `POST /api/v1/organizations/:orgId/invites` — accepts email + role
-  - Generates invite token (signed JWT, 7d expiry), sends email
-  - `POST /api/v1/auth/accept-invite?token=...` — creates user (if new) or adds to org (if existing)
-  - List/revoke pending invites
-- [ ] **Frontend:** Invite dialog on team page
-  - Email + role picker
-  - Pending invites list with revoke button
-  - `/accept-invite` page for the invited user
+### 1.4a Permission-Based Access Control ✅
+- [x] Permission map: `org:manage`, `org:invite`, `team:manage`, `invoice:create/edit/delete/view`, `customer:create/edit/delete/view`
+- [x] Invoice + customer routes guarded per-action (not just membership)
+- [x] Staff users scoped to their own invoices (`createdById` on Invoice)
+- [x] `createdById` backfill migration sets existing invoices to org owner
 
-### 1.6 Org Switcher
-- [ ] **Backend:** `GET /api/v1/auth/me` returns user's orgs list (via OrgMember)
-- [ ] **Frontend:** Org switcher in sidebar header
-  - Dropdown listing all orgs the user belongs to
-  - Click switches context (navigates to `/org/:orgId`)
-  - "Create new organization" option at the bottom
+### 1.5 Invite Team Members ✅
+- [x] Backend: `OrgInvite` model, JWT invite tokens (7d), create/list/revoke invites
+- [x] Backend: accept-invite endpoint (adds existing user or directs new user to register)
+- [x] Frontend: Invite dialog with searchable role picker, pending invites list
+- [x] Frontend: `/accept-invite` page
 
-### 1.7 Deliverables Checklist
-- [ ] Register → auto-login → org created → dashboard
-- [ ] Email verification blocks invoice creation
-- [ ] Forgot password → reset → login works
-- [ ] Org owner can invite by email, set role
-- [ ] Member sees only permitted actions
-- [ ] User in multiple orgs can switch between them
+### 1.6 Org Switcher ✅
+- [x] Backend: `GET /auth/me` returns orgMemberships with org details
+- [x] Frontend: Org switcher dropdown in sidebar (when user has >1 org)
+- [x] AuthBootstrap fetches `/auth/me` on session restore
+
+### 1.7 Advanced Filtering ✅
+- [x] Generic query builder (`queryBuilder.ts`) — Neocore-style filter strings
+- [x] Operators: `=`, `!=`, `>`, `<`, `>=`, `<=`, `like`, `not like`, `is null`, `is not null`
+- [x] Applied to invoice and customer list endpoints
+- [x] Frontend: date range + customer combobox filters on invoices page
+
+### 1.8 Reusable Combobox ✅
+- [x] `InvoCombobox` (form-bound) — single/multi select, client-side/async search, debounce
+- [x] `Combobox` (standalone) — same features, controlled via value/onChange
+- [x] Used for customer filter on invoices page
+
+### 1.9 Deliverables Checklist ✅
+- [x] Register → auto-login → org created → dashboard
+- [x] Email verification blocks invoice creation
+- [x] Forgot password → reset → login works
+- [x] Org owner can invite by email, set role (5 roles)
+- [x] Permission-based access control (not linear hierarchy)
+- [x] Staff scoped to own invoices
+- [x] User in multiple orgs can switch between them
+- [x] Advanced filtering on invoices (date, customer, status)
 
 ---
 
@@ -773,6 +757,32 @@ Each phase is independently shippable.
 ---
 
 ## Backlog (Not Scheduled)
+
+### System-Level Management Roles
+
+> Platform-level roles separate from org-level roles. These control access to the
+> admin panel and system-wide operations (user management, org oversight, support tools).
+
+**Proposed roles:**
+
+| Role | Scope | Permissions |
+|------|-------|-------------|
+| **superadmin** | Full platform | Everything — system config, role assignment, data access, destructive ops |
+| **admin** | Platform management | Manage users, view/manage all orgs, impersonate, but no system config changes |
+| **support** | Read + limited write | View users/orgs, reset passwords, unlock accounts, read-only on billing/invoices |
+| **user** | Tenant only | Normal user — accesses only their own orgs via org-level roles |
+
+**Implementation notes:**
+- Stored as `systemRole` on the User model (default: `user`)
+- Admin panel routes guarded by `systemRole` middleware (separate from `orgRole`)
+- `superadmin` is the only role that can assign/revoke other system roles
+- `admin` can do everything `support` can, plus create/suspend orgs and users
+- `support` is read-heavy: search users, view org details, trigger password resets, view invoices (no edit)
+- Audit log (backlog item) should capture all system-role actions
+
+**Dependencies:** Audit log (for accountability), Admin panel UI (Phase TBD)
+
+---
 
 - [ ] **Expense tracking** — org-level expenses (category, amount, date, vendor); P&L view
 - [ ] **Customer statement** — per-customer: total invoiced, paid, outstanding, history

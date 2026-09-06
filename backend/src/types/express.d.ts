@@ -1,4 +1,4 @@
-import { Organization } from "@prisma/client";
+import { Organization, OrgMember } from "@prisma/client";
 import { UserRole } from "@/app/modules/user/user.interface";
 
 /**
@@ -15,8 +15,10 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
-      /** Set by `ownershipGuard` after verifying the caller may access this org. */
+      /** Set by `ownershipGuard` / `orgRole` after verifying org access. */
       org?: Organization;
+      /** Set by `orgRole` — the caller's membership row in this org. */
+      orgMember?: OrgMember;
     }
   }
 }

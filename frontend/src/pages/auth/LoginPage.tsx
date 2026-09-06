@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -90,6 +90,18 @@ export default function LoginPage() {
                 {isLoading ? "Signing in…" : "Sign in"}
               </Button>
             </InvoForm>
+
+            <div className="mt-4 flex flex-col items-center gap-2 text-sm text-muted-foreground">
+              <Link to="/forgot-password" className="font-medium text-primary hover:underline">
+                Forgot password?
+              </Link>
+              <p>
+                Don't have an account?{" "}
+                <Link to="/register" className="font-medium text-primary hover:underline">
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

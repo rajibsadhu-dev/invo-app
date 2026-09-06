@@ -1,27 +1,29 @@
 import { Router } from "express";
 import validateRequest from "@/app/middlewares/validateRequest";
+import orgRole from "@/app/middlewares/orgRole";
 import { CustomerValidation } from "./customer.validation";
 import { CustomerController } from "./customer.controller";
 
-// mergeParams: true lets this router access req.params.id from the parent org router
 const router = Router({ mergeParams: true });
 
 router.post(
   "/",
+  orgRole("customer:create"),
   validateRequest(CustomerValidation.createCustomerSchema),
   CustomerController.createCustomer
 );
 
-router.get("/", CustomerController.getCustomers);
+router.get("/", orgRole("customer:view"), CustomerController.getCustomers);
 
-router.get("/:customerId", CustomerController.getCustomerById);
+router.get("/:customerId", orgRole("customer:view"), CustomerController.getCustomerById);
 
 router.patch(
   "/:customerId",
+  orgRole("customer:edit"),
   validateRequest(CustomerValidation.updateCustomerSchema),
   CustomerController.updateCustomer
 );
 
-router.delete("/:customerId", CustomerController.deleteCustomer);
+router.delete("/:customerId", orgRole("customer:delete"), CustomerController.deleteCustomer);
 
 export const CustomerRoutes = router;

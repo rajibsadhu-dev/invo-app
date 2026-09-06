@@ -12,6 +12,14 @@ enum UserRole {
   user
 }
 
+enum OrgRole {
+  owner
+  admin
+  manager
+  staff
+  viewer
+}
+
 enum InvoiceStatus {
   draft
   sent
@@ -26,17 +34,21 @@ enum PaymentMethod {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  phone     String?
-  role      UserRole @default(user)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id              Int       @id @default(autoincrement())
+  name            String
+  email           String    @unique
+  password        String
+  phone           String?
+  role            UserRole  @default(user)
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  organizations Organization[]
+  refreshTokens   RefreshToken[]
+  organizations   Organization[]
+  orgMemberships  OrgMember[]
+  sentInvites     OrgInvite[]
+  createdInvoices Invoice[]    @relation("InvoicesCreated")
 
   @@map("users")
 }
@@ -75,11 +87,47 @@ model Organization {
 
   // Restrict, not Cascade: deleting a user must never take an organization — and with it
   // every invoice ever raised — down with it. Reassign ownership first.
-  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  owner     User        @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  members   OrgMember[]
+  invites   OrgInvite[]
   customers Customer[]
   invoices  Invoice[]
 
   @@map("organizations")
+}
+
+model OrgMember {
+  id             Int          @id @default(autoincrement())
+  organizationId Int          @map("organization_id")
+  userId         Int          @map("user_id")
+  role           OrgRole      @default(staff)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("org_members")
+}
+
+model OrgInvite {
+  id             Int      @id @default(autoincrement())
+  organizationId Int      @map("organization_id")
+  email          String
+  role           OrgRole  @default(staff)
+  token          String   @unique @db.VarChar(512)
+  expiresAt      DateTime @map("expires_at")
+  invitedById    Int      @map("invited_by_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+  @@index([token])
+  @@map("org_invites")
 }
 
 model Customer {
@@ -106,6 +154,7 @@ model Invoice {
   id                  Int            @id @default(autoincrement())
   organizationId      Int            @map("organization_id")
   customerId          Int            @map("customer_id")
+  createdById         Int?           @map("created_by_id")
   invoiceNumber       String         @map("invoice_number")
   invoiceDate         DateTime       @default(now()) @map("invoice_date")
   /// Sum of line amounts, before discount and before tax.
@@ -153,6 +202,7 @@ model Invoice {
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  createdBy    User?         @relation("InvoicesCreated", fields: [createdById], references: [id], onDelete: SetNull)
   items        InvoiceItem[]
 
   @@unique([organizationId, invoiceNumber])

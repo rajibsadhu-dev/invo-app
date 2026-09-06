@@ -20,6 +20,7 @@ export type ILoginResponse = {
     name: string;
     email: string;
     role: UserRole;
+    emailVerifiedAt: Date | null;
   };
 };
 

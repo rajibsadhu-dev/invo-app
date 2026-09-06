@@ -89,6 +89,7 @@ function EditProfileDialog({
           email: result.data.email,
           role: result.data.role,
           phone: result.data.phone,
+          emailVerifiedAt: result.data.emailVerifiedAt,
         })
       )
       toast.success("Profile updated successfully")

@@ -6,6 +6,37 @@ import { AuthService } from "@/app/modules/auth/auth.service";
 
 const REFRESH_TOKEN_SWEEP_INTERVAL = 24 * 60 * 60 * 1000;
 
+const backfillOrgOwners = async (): Promise<void> => {
+  const orgs = await prisma.organization.findMany({
+    select: { id: true, ownerId: true },
+  });
+
+  let created = 0;
+  for (const org of orgs) {
+    const existing = await prisma.orgMember.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId: org.id,
+          userId: org.ownerId,
+        },
+      },
+    });
+    if (!existing) {
+      await prisma.orgMember.create({
+        data: {
+          organizationId: org.id,
+          userId: org.ownerId,
+          role: "owner",
+        },
+      });
+      created++;
+    }
+  }
+  if (created > 0) {
+    console.log(`📋 Backfilled ${created} org owner(s) into OrgMember`);
+  }
+};
+
 const sweepExpiredRefreshTokens = async (): Promise<void> => {
   try {
     const removed = await AuthService.purgeExpiredRefreshTokens();
@@ -24,6 +55,9 @@ async function bootstrap() {
 
     // Seed superadmin on first boot
     await seedSuperAdmin();
+
+    // Backfill: ensure every org owner has an OrgMember row
+    await backfillOrgOwners();
 
     await sweepExpiredRefreshTokens();
     const sweepTimer = setInterval(

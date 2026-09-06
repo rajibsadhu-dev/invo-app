@@ -1,8 +1,26 @@
 import httpStatus from "http-status";
-import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import ApiError from "@/app/errors/ApiError";
+import { buildQuery, paginationMeta } from "@/helpers/queryBuilder";
 import { ICreateCustomer, IUpdateCustomer, ICustomerQuery } from "./customer.interface";
+
+const CUSTOMER_FILTER_FIELDS = [
+  "name",
+  "email",
+  "phone",
+  "address",
+  "gstNumber",
+  "stateCode",
+  "createdAt",
+];
+
+const CUSTOMER_SORT_FIELDS = [
+  "name",
+  "email",
+  "phone",
+  "createdAt",
+  "updatedAt",
+];
 
 const createCustomer = async (organizationId: number, payload: ICreateCustomer) => {
   return prisma.customer.create({
@@ -14,47 +32,42 @@ const createCustomer = async (organizationId: number, payload: ICreateCustomer) 
   });
 };
 
-const MAX_PAGE_SIZE = 100;
-
 const getCustomers = async (organizationId: number, query: ICustomerQuery) => {
-  const { search, page = 1, sortBy = "createdAt", sortOrder = "desc" } = query;
+  const { search } = query;
 
-  // An unbounded ?limit lets one request pull the entire table.
-  const limit = Math.min(Math.max(query.limit ?? 10, 1), MAX_PAGE_SIZE);
-  const currentPage = Math.max(page, 1);
-
-  const where: Prisma.CustomerWhereInput = {
+  const baseWhere: Record<string, unknown> = {
     organizationId,
-    ...(search && {
-      OR: [
-        { name: { contains: search } },
-        { email: { contains: search } },
-        { phone: { contains: search } },
-      ],
-    }),
+    ...(search
+      ? {
+          OR: [
+            { name: { contains: search } },
+            { email: { contains: search } },
+            { phone: { contains: search } },
+          ],
+        }
+      : {}),
   };
 
-  const allowedSortFields = ["name", "email", "createdAt", "updatedAt"];
-  const orderByField = allowedSortFields.includes(sortBy) ? sortBy : "createdAt";
+  const { where, orderBy, skip, take, page, limit } = buildQuery({
+    filters: query.filters,
+    sort: query.sort,
+    page: query.page,
+    limit: query.limit,
+    allowedFields: CUSTOMER_FILTER_FIELDS,
+    allowedSortFields: CUSTOMER_SORT_FIELDS,
+    defaultSort: "createdAt",
+    defaultOrder: "desc",
+    baseWhere,
+  });
 
   const [data, total] = await Promise.all([
-    prisma.customer.findMany({
-      where,
-      orderBy: { [orderByField]: sortOrder },
-      skip: (currentPage - 1) * limit,
-      take: limit,
-    }),
+    prisma.customer.findMany({ where, orderBy, skip, take }),
     prisma.customer.count({ where }),
   ]);
 
   return {
     data,
-    meta: {
-      total,
-      page: currentPage,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
+    meta: paginationMeta(total, page, limit),
   };
 };
 
@@ -87,8 +100,6 @@ const updateCustomer = async (
 const deleteCustomer = async (organizationId: number, customerId: number) => {
   await getCustomerById(organizationId, customerId);
 
-  // The FK is Restrict, so the database would refuse this anyway — but with an opaque
-  // constraint error rather than something the user can act on.
   const invoiceCount = await prisma.invoice.count({
     where: { customerId, deletedAt: null },
   });

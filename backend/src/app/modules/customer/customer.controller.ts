@@ -18,14 +18,14 @@ const createCustomer = catchAsync(async (req: Request, res: Response) => {
 
 const getCustomers = catchAsync(async (req: Request, res: Response) => {
   const organizationId = Number(req.params.id);
-  const { search, page, limit, sortBy, sortOrder } = req.query as Record<string, string>;
+  const { filter, search, sort, page, limit } = req.query;
 
   const result = await CustomerService.getCustomers(organizationId, {
-    search,
-    page: page ? Number(page) : undefined,
-    limit: limit ? Number(limit) : undefined,
-    sortBy,
-    sortOrder: sortOrder === "asc" ? "asc" : sortOrder === "desc" ? "desc" : undefined,
+    filters: filter as string | string[] | undefined,
+    search: search as string | undefined,
+    sort: sort as string | undefined,
+    page: page as string | undefined,
+    limit: limit as string | undefined,
   });
 
   sendResponse(res, {

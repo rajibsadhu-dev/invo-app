@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { setToken, clearCredentials } from "@/features/auth/authSlice"
-import { restoreSession } from "@/services/baseApi"
+import { setToken, setUser, clearCredentials } from "@/features/auth/authSlice"
+import { restoreSession, fetchMe } from "@/services/baseApi"
 
 /**
  * Restores the in-memory access token on page load.
@@ -27,10 +27,14 @@ export default function AuthBootstrap({ children }: { children: React.ReactNode 
       return
     }
 
-    restoreSession().then((token) => {
+    restoreSession().then(async (token) => {
       if (cancelled) return
       if (token) {
         dispatch(setToken(token))
+        const me = await fetchMe(token)
+        if (!cancelled && me) {
+          dispatch(setUser(me))
+        }
       } else {
         dispatch(clearCredentials())
       }

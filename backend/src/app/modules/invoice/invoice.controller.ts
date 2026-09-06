@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
 import httpStatus from "http-status";
-import { InvoiceStatus } from "@prisma/client";
 import catchAsync from "@/shared/catchAsync";
 import sendResponse from "@/shared/sendResponse";
 import { InvoiceService } from "./invoice.service";
 
 const createInvoice = catchAsync(async (req: Request, res: Response) => {
   const organizationId = Number(req.params.id);
-  const result = await InvoiceService.createInvoice(organizationId, req.body);
+  const result = await InvoiceService.createInvoice(organizationId, req.body, req.user!.id);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -19,19 +18,16 @@ const createInvoice = catchAsync(async (req: Request, res: Response) => {
 
 const getInvoices = catchAsync(async (req: Request, res: Response) => {
   const organizationId = Number(req.params.id);
-  const { status, customerId, search, fromDate, toDate, page, limit, sortBy, sortOrder } =
-    req.query as Record<string, string>;
+  const { filter, search, sort, page, limit } = req.query;
 
   const result = await InvoiceService.getInvoices(organizationId, {
-    status: status as InvoiceStatus | undefined,
-    customerId: customerId ? Number(customerId) : undefined,
-    search,
-    fromDate,
-    toDate,
-    page: page ? Number(page) : undefined,
-    limit: limit ? Number(limit) : undefined,
-    sortBy,
-    sortOrder: sortOrder === "asc" ? "asc" : sortOrder === "desc" ? "desc" : undefined,
+    filters: filter as string | string[] | undefined,
+    search: search as string | undefined,
+    sort: sort as string | undefined,
+    page: page as string | undefined,
+    limit: limit as string | undefined,
+    orgRole: req.orgMember?.role,
+    userId: req.user!.id,
   });
 
   sendResponse(res, {
@@ -46,7 +42,9 @@ const getInvoices = catchAsync(async (req: Request, res: Response) => {
 const getInvoiceById = catchAsync(async (req: Request, res: Response) => {
   const organizationId = Number(req.params.id);
   const invoiceId = Number(req.params.invoiceId);
-  const result = await InvoiceService.getInvoiceById(organizationId, invoiceId);
+  const result = await InvoiceService.getInvoiceById(
+    organizationId, invoiceId, req.orgMember?.role, req.user!.id
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -59,7 +57,9 @@ const getInvoiceById = catchAsync(async (req: Request, res: Response) => {
 const updateInvoice = catchAsync(async (req: Request, res: Response) => {
   const organizationId = Number(req.params.id);
   const invoiceId = Number(req.params.invoiceId);
-  const result = await InvoiceService.updateInvoice(organizationId, invoiceId, req.body);
+  const result = await InvoiceService.updateInvoice(
+    organizationId, invoiceId, req.body, req.orgMember?.role, req.user!.id
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -72,7 +72,9 @@ const updateInvoice = catchAsync(async (req: Request, res: Response) => {
 const deleteInvoice = catchAsync(async (req: Request, res: Response) => {
   const organizationId = Number(req.params.id);
   const invoiceId = Number(req.params.invoiceId);
-  await InvoiceService.deleteInvoice(organizationId, invoiceId);
+  await InvoiceService.deleteInvoice(
+    organizationId, invoiceId, req.orgMember?.role, req.user!.id
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

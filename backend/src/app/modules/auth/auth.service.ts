@@ -9,6 +9,7 @@ import {
   IUpdateMePayload,
 } from "@/app/modules/user/user.interface";
 import { jwtHelpers } from "@/helpers/jwtHelper";
+import { sendMail } from "@/helpers/mailer";
 import config from "@/config";
 
 /**
@@ -47,6 +48,76 @@ const persistRefreshToken = (userId: number, refreshToken: string) =>
     },
   });
 
+type IRegisterPayload = {
+  name: string;
+  email: string;
+  password: string;
+  orgName: string;
+};
+
+const register = async (
+  payload: IRegisterPayload
+): Promise<ILoginResponse & { refreshToken: string }> => {
+  const existing = await prisma.user.findUnique({
+    where: { email: payload.email },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new ApiError(httpStatus.CONFLICT, "Email already registered");
+  }
+
+  const hashedPassword = await bcrypt.hash(
+    payload.password,
+    config.bcrypt_salt_rounds
+  );
+
+  const { user, org } = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        name: payload.name,
+        email: payload.email,
+        password: hashedPassword,
+        role: "user",
+      },
+    });
+
+    const org = await tx.organization.create({
+      data: {
+        name: payload.orgName,
+        ownerId: user.id,
+        invoicePrefix: "INV",
+      },
+    });
+
+    await tx.orgMember.create({
+      data: {
+        organizationId: org.id,
+        userId: user.id,
+        role: "owner",
+      },
+    });
+
+    return { user, org };
+  });
+
+  const { accessToken, refreshToken } = issueTokens(user);
+  await persistRefreshToken(user.id, refreshToken);
+
+  sendVerificationEmail(user.id).catch(() => {});
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      emailVerifiedAt: user.emailVerifiedAt,
+    },
+  };
+};
+
 const login = async (
   payload: ILoginPayload
 ): Promise<ILoginResponse & { refreshToken: string }> => {
@@ -68,7 +139,13 @@ const login = async (
   return {
     accessToken,
     refreshToken,
-    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      emailVerifiedAt: user.emailVerifiedAt,
+    },
   };
 };
 
@@ -149,6 +226,16 @@ const getMe = async (userId: number) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     omit: { password: true },
+    include: {
+      orgMemberships: {
+        include: {
+          organization: {
+            select: { id: true, name: true, logo: true },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      },
+    },
   });
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, "User not found");
@@ -212,6 +299,118 @@ const changePassword = async (
   ]);
 };
 
+const sendVerificationEmail = async (userId: number): Promise<void> => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return;
+
+  if (user.emailVerifiedAt) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Email is already verified");
+  }
+
+  const token = jwtHelpers.createToken(
+    { id: user.id, purpose: "email-verification" },
+    config.jwt.secret,
+    "24h" as string
+  );
+
+  const verifyUrl = `${config.cors_origins[0] || `http://localhost:${config.port}`}/verify-email?token=${token}`;
+
+  await sendMail({
+    to: user.email,
+    subject: "Verify your email — Invo",
+    html: `
+      <h2>Welcome to Invo!</h2>
+      <p>Please verify your email address by clicking the link below:</p>
+      <p><a href="${verifyUrl}" style="display:inline-block;padding:10px 24px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">Verify Email</a></p>
+      <p>Or copy this link: <br/>${verifyUrl}</p>
+      <p>This link expires in 24 hours.</p>
+    `,
+  });
+};
+
+const verifyEmail = async (token: string): Promise<void> => {
+  let decoded;
+  try {
+    decoded = jwtHelpers.verifyToken(token, config.jwt.secret);
+  } catch {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid or expired verification link");
+  }
+
+  if (decoded.purpose !== "email-verification") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid verification link");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: Number(decoded.id) } });
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  if (user.emailVerifiedAt) return;
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerifiedAt: new Date() },
+  });
+};
+
+const resendVerification = async (userId: number): Promise<void> => {
+  await sendVerificationEmail(userId);
+};
+
+const forgotPassword = async (email: string): Promise<void> => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return;
+
+  const token = jwtHelpers.createToken(
+    { id: user.id, purpose: "password-reset" },
+    config.jwt.secret,
+    "1h" as string
+  );
+
+  const resetUrl = `${config.cors_origins[0] || `http://localhost:${config.port}`}/reset-password?token=${token}`;
+
+  await sendMail({
+    to: user.email,
+    subject: "Reset your password — Invo",
+    html: `
+      <h2>Password Reset</h2>
+      <p>You requested a password reset. Click the link below to set a new password:</p>
+      <p><a href="${resetUrl}" style="display:inline-block;padding:10px 24px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">Reset Password</a></p>
+      <p>Or copy this link: <br/>${resetUrl}</p>
+      <p>This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+    `,
+  });
+};
+
+const resetPassword = async (
+  token: string,
+  newPassword: string
+): Promise<void> => {
+  let decoded;
+  try {
+    decoded = jwtHelpers.verifyToken(token, config.jwt.secret);
+  } catch {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid or expired reset link");
+  }
+
+  if (decoded.purpose !== "password-reset") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid reset link");
+  }
+
+  const userId = Number(decoded.id);
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  const hashed = await bcrypt.hash(newPassword, config.bcrypt_salt_rounds);
+
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { password: hashed } }),
+    prisma.refreshToken.deleteMany({ where: { userId } }),
+  ]);
+};
+
 /** Housekeeping: expired rows are dead weight and are never read. */
 const purgeExpiredRefreshTokens = async (): Promise<number> => {
   const { count } = await prisma.refreshToken.deleteMany({
@@ -221,11 +420,17 @@ const purgeExpiredRefreshTokens = async (): Promise<number> => {
 };
 
 export const AuthService = {
+  register,
   login,
   refreshToken,
   logout,
   getMe,
   updateMe,
   changePassword,
+  sendVerificationEmail,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword,
   purgeExpiredRefreshTokens,
 };

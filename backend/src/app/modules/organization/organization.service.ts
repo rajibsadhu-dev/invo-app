@@ -6,22 +6,38 @@ import ApiError from "@/app/errors/ApiError";
 import { ICreateOrganization, IUpdateOrganization } from "./organization.interface";
 
 const createOrganization = async (ownerId: number, payload: ICreateOrganization) => {
-  const org = await prisma.organization.create({
-    data: {
-      ...payload,
-      ownerId,
-      email: payload.email || null,
-      invoicePrefix: payload.invoicePrefix || "INV",
-    },
+  return prisma.$transaction(async (tx) => {
+    const org = await tx.organization.create({
+      data: {
+        ...payload,
+        ownerId,
+        email: payload.email || null,
+        invoicePrefix: payload.invoicePrefix || "INV",
+      },
+    });
+
+    await tx.orgMember.create({
+      data: {
+        organizationId: org.id,
+        userId: ownerId,
+        role: "owner",
+      },
+    });
+
+    return org;
   });
-  return org;
 };
 
-const getMyOrganizations = async (ownerId: number) => {
-  return prisma.organization.findMany({
-    where: { ownerId },
-    orderBy: { createdAt: "desc" },
+const getMyOrganizations = async (userId: number) => {
+  const memberships = await prisma.orgMember.findMany({
+    where: { userId },
+    include: { organization: true },
+    orderBy: { organization: { createdAt: "desc" } },
   });
+  return memberships.map((m) => ({
+    ...m.organization,
+    orgRole: m.role,
+  }));
 };
 
 const getOrganizationById = async (id: number) => {
@@ -98,12 +114,38 @@ const assignOrganization = async (orgId: number, userId: number) => {
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, "User not found");
   }
-  return prisma.organization.update({
-    where: { id: orgId },
-    data: { ownerId: userId },
-    include: {
-      owner: { select: { id: true, name: true, email: true } },
-    },
+
+  return prisma.$transaction(async (tx) => {
+    const org = await tx.organization.findUnique({ where: { id: orgId } });
+    if (!org) {
+      throw new ApiError(httpStatus.NOT_FOUND, "Organization not found");
+    }
+
+    // Demote old owner to admin
+    await tx.orgMember.upsert({
+      where: {
+        organizationId_userId: { organizationId: orgId, userId: org.ownerId },
+      },
+      update: { role: "admin" },
+      create: { organizationId: orgId, userId: org.ownerId, role: "admin" },
+    });
+
+    // Promote new owner
+    await tx.orgMember.upsert({
+      where: {
+        organizationId_userId: { organizationId: orgId, userId },
+      },
+      update: { role: "owner" },
+      create: { organizationId: orgId, userId, role: "owner" },
+    });
+
+    return tx.organization.update({
+      where: { id: orgId },
+      data: { ownerId: userId },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+      },
+    });
   });
 };
 

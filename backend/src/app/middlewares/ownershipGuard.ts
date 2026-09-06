@@ -4,9 +4,9 @@ import prisma from "@/lib/prisma";
 import ApiError from "@/app/errors/ApiError";
 
 /**
- * Verifies the authenticated user owns the organization at req.params.id.
+ * Verifies the authenticated user is a member of the organization at req.params.id.
  * Superadmin bypasses this check and can access any organization.
- * Attaches the org to `req.org` for downstream use.
+ * Attaches the org and membership to `req.org` / `req.orgMember`.
  *
  * Must run BEFORE any body/file parsing for the route it protects — otherwise an
  * unauthorized request has already written its payload to disk by the time it is refused.
@@ -34,14 +34,29 @@ const ownershipGuard = async (
       throw new ApiError(httpStatus.NOT_FOUND, "Organization not found");
     }
 
-    if (user.role !== "superadmin" && org.ownerId !== user.id) {
+    req.org = org;
+
+    if (user.role === "superadmin") {
+      return next();
+    }
+
+    const membership = await prisma.orgMember.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId: orgId,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (!membership) {
       throw new ApiError(
         httpStatus.FORBIDDEN,
         "You do not have permission to access this organization"
       );
     }
 
-    req.org = org;
+    req.orgMember = membership;
     next();
   } catch (error) {
     next(error);
