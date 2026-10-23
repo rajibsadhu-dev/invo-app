@@ -316,12 +316,13 @@ Each phase is independently shippable.
 
 ---
 
-## Phase 5 — Suppliers & Purchase Orders
+## Phase 5 — Suppliers & Purchase Orders ✅
 
 > Goal: Manage suppliers, create purchase orders, receive goods into inventory.
+> **Complete: 2026-10-23** — backend, schema and frontend.
 
 ### 5.1 Supplier Model
-- [ ] **Schema:**
+- [x] **Schema:**
   ```
   model Supplier {
     id             Int       @id @default(autoincrement())
@@ -344,15 +345,15 @@ Each phase is independently shippable.
     @@index([organizationId, name])
   }
   ```
-- [ ] **Backend:** Supplier module — full CRUD
+- [x] **Backend:** Supplier module — full CRUD
   - `GET /organizations/:orgId/suppliers` — list with search, pagination
-  - Standard CRUD endpoints
+  - Standard CRUD endpoints + `/search?q=` picker endpoint
   - Refuse delete if purchase orders exist (soft delete via `isActive`)
-- [ ] **Frontend:** Supplier pages
+- [x] **Frontend:** Supplier pages
   - Supplier list at `/org/:orgId/suppliers`
   - Add/edit supplier dialog
   - Supplier detail page with purchase history
-  - Sidebar: add "Suppliers" nav item
+  - Sidebar: add "Suppliers" and "Purchase Orders" nav items
 
 ### 5.2 Purchase Orders
 - [ ] **Schema:**
@@ -400,7 +401,7 @@ Each phase is independently shippable.
     @@index([purchaseOrderId])
   }
   ```
-- [ ] **Backend:** Purchase order module
+- [x] **Backend:** Purchase order module
   - CRUD with status machine: draft → ordered → partially_received → received, anything → cancelled
   - Auto-number: PO-0001 per org (org gets `poPrefix` and `nextPoNumber`)
   - GST calculation on purchase items (same engine as invoices)
@@ -408,30 +409,34 @@ Each phase is independently shippable.
     - Body: `[{ itemId, receivedQuantity }]`
     - Creates StockMovement records (type: `purchase`, referenceType: `purchase_order`)
     - Updates `receivedQuantity` on each PO item
-    - Updates product/variant stock
+    - Updates product/variant stock and purchasePrice
     - Auto-transitions status based on received vs ordered quantities
   - Partial receiving supported — receive some items now, rest later
-- [ ] **Frontend:** Purchase order pages
-  - PO list at `/org/:orgId/purchase-orders`
-  - Create/edit PO form: select supplier, add product items (product picker), quantities, rates
-  - PO detail page: status, items with received vs ordered, "Receive" button
-  - Receive dialog: check off items and enter received quantities
-  - PO print template
+- [x] **Frontend:** Purchase order pages
+  - PO list at `/org/:orgId/purchase-orders` with status tabs, supplier filter, pagination
+  - Create/edit PO form: supplier combobox, product line items (product picker with purchasePrice), GST per line
+  - PO detail page: status actions, items with received vs ordered, "Receive Goods" button
+  - Receive dialog: enter received quantities per item, "Receive All" shortcut
+  - [ ] PO print template (not yet implemented)
 
 ### 5.3 Purchase Cost Tracking
-- [ ] Track `purchasePrice` on Product (already in Phase 2 schema)
-- [ ] PO item rate updates `purchasePrice` on the product (optional: latest or weighted average)
+- [x] Track `purchasePrice` on Product (already in Phase 2 schema)
+- [x] PO item rate updates `purchasePrice` on the product (latest price on receive)
+- [x] Product picker shows purchasePrice for PO forms
 - [ ] Inventory valuation report: stock value based on purchase price
 - [ ] Profit margin indicators: selling price vs purchase price per product
 
 ### 5.4 Deliverables Checklist
-- [ ] Supplier CRUD with contact details and GST
-- [ ] Purchase order creation with product items
-- [ ] PO status machine: draft → ordered → received
-- [ ] Receive goods → stock increases automatically
-- [ ] Partial receiving supported
-- [ ] Purchase price tracked per product
-- [ ] Stock movement audit trail includes purchase references
+- [x] Supplier CRUD with contact details and GST
+- [x] Purchase order creation with product items
+- [x] PO status machine: draft → ordered → received
+- [x] Receive goods → stock increases automatically
+- [x] Partial receiving supported
+- [x] Purchase price tracked per product
+- [x] Stock movement audit trail includes purchase references
+- [ ] PO print template
+- [ ] Inventory valuation report
+- [ ] Profit margin indicators
 
 ---
 

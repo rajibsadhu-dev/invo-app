@@ -379,6 +379,7 @@ export type ProductPickerHit = {
   hsnCode?: string | null
   unit?: string | null
   sellingPrice: string
+  purchasePrice?: string | null
   gstRate: string
   stockQuantity: string
   hasVariants: boolean
@@ -429,6 +430,7 @@ export type ProductVariantPickerHit = {
   name: string
   sku?: string | null
   sellingPrice?: string | null
+  purchasePrice?: string | null
   attributes: Record<string, string>
   stockQuantity: string
 }
@@ -536,4 +538,122 @@ export type InventorySummary = {
     categoryName: string
     productCount: number
   }>
+}
+
+// ─── Supplier ──────────────────────────────────────────────────────────────
+
+export type Supplier = {
+  id: number
+  organizationId: number
+  name: string
+  email?: string | null
+  phone?: string | null
+  address?: string | null
+  gstNumber?: string | null
+  stateCode?: string | null
+  contactPerson?: string | null
+  notes?: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  _count?: { purchaseOrders: number }
+}
+
+export type SupplierPickerHit = {
+  id: number
+  name: string
+  email?: string | null
+  phone?: string | null
+  gstNumber?: string | null
+  stateCode?: string | null
+  contactPerson?: string | null
+}
+
+export type CreateSupplierPayload = {
+  name: string
+  email?: string
+  phone?: string
+  address?: string
+  gstNumber?: string
+  stateCode?: string
+  contactPerson?: string
+  notes?: string
+}
+
+export type UpdateSupplierPayload = Partial<CreateSupplierPayload> & {
+  isActive?: boolean
+}
+
+// ─── Purchase Order ─────────────────────────────────────────────────────────
+
+export type POStatus =
+  | "draft"
+  | "ordered"
+  | "partially_received"
+  | "received"
+  | "cancelled"
+
+export type PurchaseOrderItem = {
+  id: number
+  purchaseOrderId: number
+  productId: number
+  productVariantId?: number | null
+  description: string
+  hsnCode?: string | null
+  unit?: string | null
+  quantity: string
+  receivedQuantity: string
+  rate: string
+  amount: string
+  gstRate: string
+  gstAmount: string
+  product?: { id: number; name: string; sku?: string | null; hasVariants?: boolean }
+  variant?: { id: number; name: string; sku?: string | null } | null
+}
+
+export type PurchaseOrder = {
+  id: number
+  organizationId: number
+  supplierId: number
+  poNumber: string
+  poDate: string
+  expectedDate?: string | null
+  status: POStatus
+  subtotal: string
+  taxTotal: string
+  grandTotal: string
+  notes?: string | null
+  deletedAt?: string | null
+  createdAt: string
+  updatedAt: string
+  supplier?: { id: number; name: string }
+  items?: PurchaseOrderItem[]
+  _count?: { items: number }
+}
+
+export type POItemPayload = {
+  productId: number
+  productVariantId?: number | null
+  description: string
+  hsnCode?: string | null
+  unit?: string | null
+  quantity: number
+  rate: number
+  gstRate?: number
+}
+
+export type CreatePOPayload = {
+  supplierId: number
+  poDate?: string
+  expectedDate?: string | null
+  notes?: string
+  items: POItemPayload[]
+}
+
+export type UpdatePOPayload = Partial<CreatePOPayload> & {
+  status?: POStatus
+}
+
+export type ReceivePOPayload = {
+  items: Array<{ itemId: number; quantity: number }>
 }

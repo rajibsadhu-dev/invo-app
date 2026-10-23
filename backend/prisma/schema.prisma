@@ -89,6 +89,8 @@ model Organization {
   nextInvoiceNumber Int      @default(1) @map("next_invoice_number")
   /// When to deduct stock on invoice status change: "sent" (default) or "created".
   deductStockOn     String   @default("sent") @map("deduct_stock_on") @db.VarChar(10)
+  poPrefix          String   @default("PO") @map("po_prefix") @db.VarChar(10)
+  nextPoNumber      Int      @default(1) @map("next_po_number")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -103,6 +105,8 @@ model Organization {
   products          Product[]
   variantAttributes VariantAttribute[]
   stockMovements    StockMovement[]
+  suppliers         Supplier[]
+  purchaseOrders    PurchaseOrder[]
 
   @@map("organizations")
 }
@@ -210,9 +214,10 @@ model Product {
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   category     ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  variants       ProductVariant[]
-  invoiceItems   InvoiceItem[]
-  stockMovements StockMovement[]
+  variants           ProductVariant[]
+  invoiceItems       InvoiceItem[]
+  stockMovements     StockMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@unique([organizationId, sku])
   @@index([organizationId, categoryId])
@@ -255,9 +260,10 @@ model ProductVariant {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  product        Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  invoiceItems   InvoiceItem[]
-  stockMovements StockMovement[]
+  product            Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  invoiceItems       InvoiceItem[]
+  stockMovements     StockMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@unique([productId, sku])
   @@index([productId])
@@ -389,4 +395,78 @@ model StockMovement {
   @@index([organizationId, createdAt])
   @@index([referenceType, referenceId])
   @@map("stock_movements")
+}
+
+model Supplier {
+  id             Int      @id @default(autoincrement())
+  organizationId Int      @map("organization_id")
+  name           String
+  email          String?
+  phone          String?
+  address        String?  @db.Text
+  gstNumber      String?  @map("gst_number") @db.VarChar(15)
+  /// Two-digit GST state code of the supplier.
+  stateCode      String?  @map("state_code") @db.VarChar(2)
+  contactPerson  String?  @map("contact_person")
+  notes          String?  @db.Text
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+
+  @@index([organizationId, name])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id               Int       @id @default(autoincrement())
+  organizationId   Int       @map("organization_id")
+  supplierId       Int       @map("supplier_id")
+  poNumber         String    @map("po_number")
+  poDate           DateTime  @default(now()) @map("po_date")
+  expectedDate     DateTime? @map("expected_date")
+  /// draft → ordered → partially_received → received; any → cancelled.
+  status           String    @default("draft") @db.VarChar(20)
+  subtotal         Decimal   @db.Decimal(12, 2)
+  taxTotal         Decimal   @default(0) @map("tax_total") @db.Decimal(12, 2)
+  grandTotal       Decimal   @map("grand_total") @db.Decimal(12, 2)
+  notes            String?   @db.Text
+  deletedAt        DateTime? @map("deleted_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier     Supplier           @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  items        PurchaseOrderItem[]
+
+  @@unique([organizationId, poNumber])
+  @@index([organizationId, status])
+  @@index([supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id               Int     @id @default(autoincrement())
+  purchaseOrderId  Int     @map("purchase_order_id")
+  productId        Int     @map("product_id")
+  productVariantId Int?    @map("product_variant_id")
+  description      String
+  hsnCode          String? @map("hsn_code") @db.VarChar(8)
+  unit             String? @db.VarChar(20)
+  quantity         Decimal @db.Decimal(10, 3)
+  receivedQuantity Decimal @default(0) @map("received_quantity") @db.Decimal(10, 3)
+  rate             Decimal @db.Decimal(12, 2)
+  amount           Decimal @db.Decimal(12, 2)
+  gstRate          Decimal @default(0) @map("gst_rate") @db.Decimal(5, 2)
+  gstAmount        Decimal @default(0) @map("gst_amount") @db.Decimal(12, 2)
+
+  purchaseOrder PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant       ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@map("purchase_order_items")
 }

@@ -28,6 +28,12 @@ import AdminOrganizationsPage from "@/pages/admin/AdminOrganizationsPage"
 import InventoryPage from "@/pages/inventory/InventoryPage"
 import LowStockPage from "@/pages/inventory/LowStockPage"
 import MovementsPage from "@/pages/inventory/MovementsPage"
+import SuppliersPage from "@/pages/suppliers/SuppliersPage"
+import SupplierDetailPage from "@/pages/suppliers/SupplierDetailPage"
+import PurchaseOrdersPage from "@/pages/purchase-orders/PurchaseOrdersPage"
+import CreatePOPage from "@/pages/purchase-orders/CreatePOPage"
+import EditPOPage from "@/pages/purchase-orders/EditPOPage"
+import PODetailPage from "@/pages/purchase-orders/PODetailPage"
 
 const router = createBrowserRouter([
   {
@@ -85,6 +91,12 @@ const router = createBrowserRouter([
       { path: "org/:orgId/inventory", element: <InventoryPage /> },
       { path: "org/:orgId/inventory/low-stock", element: <LowStockPage /> },
       { path: "org/:orgId/inventory/movements", element: <MovementsPage /> },
+      { path: "org/:orgId/suppliers", element: <SuppliersPage /> },
+      { path: "org/:orgId/suppliers/:supplierId", element: <SupplierDetailPage /> },
+      { path: "org/:orgId/purchase-orders", element: <PurchaseOrdersPage /> },
+      { path: "org/:orgId/purchase-orders/new", element: <CreatePOPage /> },
+      { path: "org/:orgId/purchase-orders/:poId", element: <PODetailPage /> },
+      { path: "org/:orgId/purchase-orders/:poId/edit", element: <EditPOPage /> },
       { path: "org/:orgId/invoices", element: <InvoicesPage /> },
       { path: "org/:orgId/invoices/new", element: <CreateInvoicePage /> },
       { path: "org/:orgId/invoices/:invoiceId", element: <InvoiceDetailPage /> },

@@ -139,3 +139,19 @@
 - [x] Invoice service: stock reversal on cancellation
 - [x] Product picker returns `stockQuantity` for products and variants
 - [x] `tsc --noEmit` clean
+
+## Phase 11: Suppliers & Purchase Orders (ROADMAP Phase 5)
+- [x] Schema: `Supplier` model (org-scoped, GST info, contact person, active/inactive)
+- [x] Schema: `PurchaseOrder` model (status machine, auto-numbering, soft delete)
+- [x] Schema: `PurchaseOrderItem` model (quantity, receivedQuantity, GST per line)
+- [x] Schema: `poPrefix` and `nextPoNumber` on Organization
+- [x] Migration `20261023000300_suppliers_and_purchase_orders` + prisma generate
+- [x] Permissions: `supplier:create/edit/delete/view` and `purchase_order:create/edit/delete/view`
+- [x] Supplier module — CRUD + `/search?q=` picker endpoint
+- [x] Purchase order module — CRUD with status machine
+- [x] Auto-numbering: PO-0001 per org (increment-first pattern)
+- [x] GST calculation on PO items using Decimal arithmetic
+- [x] Receive goods endpoint with partial receiving
+- [x] Goods receiving creates StockMovement records and updates stock
+- [x] Product search endpoint now returns `purchasePrice`
+- [x] `tsc --noEmit` clean

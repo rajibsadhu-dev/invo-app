@@ -126,3 +126,22 @@
 - [x] Routes registered for all 3 inventory pages
 - [x] `tsc -b`, `npm run lint` (0 errors) clean
 - [ ] Not verified in a browser yet
+
+## Phase 12: Suppliers & Purchase Orders (ROADMAP Phase 5)
+- [x] Supplier types added (`Supplier`, `SupplierPickerHit`, `CreateSupplierPayload`, `UpdateSupplierPayload`)
+- [x] Purchase order types added (`POStatus`, `PurchaseOrder`, `PurchaseOrderItem`, payloads)
+- [x] Supplier API endpoints (RTK Query) — CRUD + search
+- [x] Purchase order API endpoints (RTK Query) — CRUD + receive goods
+- [x] Supplier list page at `/org/:orgId/suppliers` (search, pagination, add/edit dialogs, delete)
+- [x] Supplier detail page at `/org/:orgId/suppliers/:supplierId` (contact info, GST, recent POs)
+- [x] PO list page at `/org/:orgId/purchase-orders` (status tabs, supplier filter, pagination, delete)
+- [x] Create PO page at `/org/:orgId/purchase-orders/new` (supplier combobox, product line items with purchasePrice, GST)
+- [x] Edit PO page at `/org/:orgId/purchase-orders/:poId/edit` (draft-only editing)
+- [x] PO detail page at `/org/:orgId/purchase-orders/:poId` (status actions, items table, receive goods dialog)
+- [x] Receive goods dialog: per-item quantity input, "Receive All" shortcut, remaining tracking
+- [x] Product picker adapted for PO forms (uses purchasePrice instead of sellingPrice)
+- [x] Sidebar: "Suppliers" and "Purchase Orders" nav items
+- [x] Routes registered for all supplier and PO pages
+- [x] `ProductPickerHit` and `ProductVariantPickerHit` types updated with `purchasePrice`
+- [x] `tsc -b`, `npm run lint` (0 errors) clean
+- [ ] Not verified in a browser yet

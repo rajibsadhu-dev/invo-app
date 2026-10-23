@@ -26,7 +26,7 @@ const PRODUCT_SORT_FIELDS = [
   "updatedAt",
 ];
 
-/** Fields the invoice-form picker needs to auto-fill a line. */
+/** Fields the invoice/PO-form picker needs to auto-fill a line. */
 const PICKER_SELECT = {
   id: true,
   name: true,
@@ -34,6 +34,7 @@ const PICKER_SELECT = {
   hsnCode: true,
   unit: true,
   sellingPrice: true,
+  purchasePrice: true,
   gstRate: true,
   hasVariants: true,
   stockQuantity: true,
@@ -171,6 +172,7 @@ const searchProducts = async (organizationId: number, term?: string) => {
           name: true,
           sku: true,
           sellingPrice: true,
+          purchasePrice: true,
           attributes: true,
           stockQuantity: true,
         },

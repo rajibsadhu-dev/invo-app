@@ -16,6 +16,8 @@ import { CategoryRoutes } from "@/app/modules/category/category.route";
 import { ProductRoutes } from "@/app/modules/product/product.route";
 import { VariantAttributeRoutes } from "@/app/modules/variant-attribute/variantAttribute.route";
 import { InventoryRoutes } from "@/app/modules/inventory/inventory.route";
+import { SupplierRoutes } from "@/app/modules/supplier/supplier.route";
+import { PurchaseOrderRoutes } from "@/app/modules/purchase-order/purchaseOrder.route";
 
 const router = Router();
 
@@ -85,6 +87,8 @@ router.use("/:id/categories", CategoryRoutes);
 router.use("/:id/products", ProductRoutes);
 router.use("/:id/variant-attributes", VariantAttributeRoutes);
 router.use("/:id/inventory", InventoryRoutes);
+router.use("/:id/suppliers", SupplierRoutes);
+router.use("/:id/purchase-orders", PurchaseOrderRoutes);
 
 // Logo upload — owner or admin
 router.post(

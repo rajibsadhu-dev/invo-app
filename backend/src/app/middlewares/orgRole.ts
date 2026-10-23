@@ -21,7 +21,15 @@ export type OrgPermission =
   | "product:create"
   | "product:edit"
   | "product:delete"
-  | "product:view";
+  | "product:view"
+  | "supplier:create"
+  | "supplier:edit"
+  | "supplier:delete"
+  | "supplier:view"
+  | "purchase_order:create"
+  | "purchase_order:edit"
+  | "purchase_order:delete"
+  | "purchase_order:view";
 
 const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
   owner: new Set([
@@ -40,6 +48,14 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "product:edit",
     "product:delete",
     "product:view",
+    "supplier:create",
+    "supplier:edit",
+    "supplier:delete",
+    "supplier:view",
+    "purchase_order:create",
+    "purchase_order:edit",
+    "purchase_order:delete",
+    "purchase_order:view",
   ]),
   admin: new Set([
     "org:manage",
@@ -57,6 +73,14 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "product:edit",
     "product:delete",
     "product:view",
+    "supplier:create",
+    "supplier:edit",
+    "supplier:delete",
+    "supplier:view",
+    "purchase_order:create",
+    "purchase_order:edit",
+    "purchase_order:delete",
+    "purchase_order:view",
   ]),
   manager: new Set([
     "org:invite",
@@ -72,6 +96,14 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "product:edit",
     "product:delete",
     "product:view",
+    "supplier:create",
+    "supplier:edit",
+    "supplier:delete",
+    "supplier:view",
+    "purchase_order:create",
+    "purchase_order:edit",
+    "purchase_order:delete",
+    "purchase_order:view",
   ]),
   staff: new Set([
     "invoice:create",
@@ -82,11 +114,15 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "customer:view",
     // Read-only on the catalogue: staff raise invoices from it, they do not price it.
     "product:view",
+    "supplier:view",
+    "purchase_order:view",
   ]),
   viewer: new Set([
     "invoice:view",
     "customer:view",
     "product:view",
+    "supplier:view",
+    "purchase_order:view",
   ]),
 };
 
