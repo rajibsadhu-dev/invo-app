@@ -127,3 +127,15 @@
 - [x] Invoice: accept `productVariantId` per line item, validate variant belongs to product+org
 - [x] Product detail includes variants; product picker returns active variants for variant-enabled products
 - [x] `tsc --noEmit` clean
+
+## Phase 10: Inventory Management (ROADMAP Phase 4)
+- [x] Schema: `StockMovement` model (org + product + optional variant, type, quantity, reference, notes, createdBy)
+- [x] Schema: `stockQuantity` and `lowStockAlert` on Product; `deductStockOn` on Organization
+- [x] Migration `20261023000200_inventory_management` + prisma generate
+- [x] Inventory module: stock adjust (relative), stock set (absolute), movement history
+- [x] Inventory: low-stock endpoint (`$queryRaw` for column-to-column comparison)
+- [x] Inventory: summary endpoint (totals + category breakdown)
+- [x] Invoice service: stock deduction on status change (configurable trigger, idempotent)
+- [x] Invoice service: stock reversal on cancellation
+- [x] Product picker returns `stockQuantity` for products and variants
+- [x] `tsc --noEmit` clean

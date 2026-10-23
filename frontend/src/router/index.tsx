@@ -25,6 +25,9 @@ import EditInvoicePage from "@/pages/invoices/EditInvoicePage"
 import InvoiceDetailPage from "@/pages/invoices/InvoiceDetailPage"
 import TeamPage from "@/pages/org/TeamPage"
 import AdminOrganizationsPage from "@/pages/admin/AdminOrganizationsPage"
+import InventoryPage from "@/pages/inventory/InventoryPage"
+import LowStockPage from "@/pages/inventory/LowStockPage"
+import MovementsPage from "@/pages/inventory/MovementsPage"
 
 const router = createBrowserRouter([
   {
@@ -79,6 +82,9 @@ const router = createBrowserRouter([
       { path: "org/:orgId/products/categories", element: <CategoriesPage /> },
       { path: "org/:orgId/products/attributes", element: <VariantAttributesPage /> },
       { path: "org/:orgId/products/:productId", element: <ProductDetailPage /> },
+      { path: "org/:orgId/inventory", element: <InventoryPage /> },
+      { path: "org/:orgId/inventory/low-stock", element: <LowStockPage /> },
+      { path: "org/:orgId/inventory/movements", element: <MovementsPage /> },
       { path: "org/:orgId/invoices", element: <InvoicesPage /> },
       { path: "org/:orgId/invoices/new", element: <CreateInvoicePage /> },
       { path: "org/:orgId/invoices/:invoiceId", element: <InvoiceDetailPage /> },

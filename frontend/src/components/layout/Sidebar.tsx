@@ -7,6 +7,7 @@ import {
   UserRound,
   ReceiptText,
   Package,
+  Warehouse,
   Building2,
   User,
   LogOut,
@@ -121,6 +122,7 @@ function OrgContextNav({ orgId, onClose }: { orgId: number; onClose: () => void 
       <NavItem to={`/org/${orgId}/team`} icon={UsersRound} label="Team" onClick={onClose} />
       <NavItem to={`/org/${orgId}/customers`} icon={UserRound} label="Customers" onClick={onClose} />
       <NavItem to={`/org/${orgId}/products`} icon={Package} label="Products" onClick={onClose} />
+      <NavItem to={`/org/${orgId}/inventory`} icon={Warehouse} label="Inventory" onClick={onClose} />
       <NavItem to={`/org/${orgId}/invoices`} icon={ReceiptText} label="Invoices" onClick={onClose} />
     </div>
   )

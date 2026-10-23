@@ -1,6 +1,6 @@
 -- CreateTable: variant_attributes
 CREATE TABLE `variant_attributes` (
-    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `organization_id` INTEGER NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `values` JSON NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE `variant_attributes` (
 
 -- CreateTable: product_variants
 CREATE TABLE `product_variants` (
-    `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `product_id` INTEGER NOT NULL,
     `sku` VARCHAR(50) NULL,
     `name` VARCHAR(191) NOT NULL,

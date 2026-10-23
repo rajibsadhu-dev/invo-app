@@ -114,3 +114,15 @@
 - [x] Route for variant attributes page added to router
 - [x] `tsc -b`, `npm run lint` (0 errors) and `npm run build` clean
 - [ ] Not verified in a browser yet
+
+## Phase 11: Inventory Management (ROADMAP Phase 4)
+- [x] Inventory API endpoints (RTK Query) — adjust, set, movements, low-stock, summary
+- [x] StockSection on product detail page: stock overview (product or variant table) + recent movements + adjust dialog
+- [x] Inventory dashboard at `/org/:orgId/inventory` — stat cards, category breakdown, quick links
+- [x] Low-stock page at `/org/:orgId/inventory/low-stock` — products/variants below threshold
+- [x] Movements page at `/org/:orgId/inventory/movements` — paginated log with type filter
+- [x] Product picker on invoice form shows stock quantities
+- [x] Sidebar: "Inventory" nav item with Warehouse icon
+- [x] Routes registered for all 3 inventory pages
+- [x] `tsc -b`, `npm run lint` (0 errors) clean
+- [ ] Not verified in a browser yet

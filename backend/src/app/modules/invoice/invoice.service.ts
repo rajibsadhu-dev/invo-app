@@ -6,6 +6,7 @@ import { amountInWords } from "@/helpers/amountInWords";
 import { computeInvoiceTotals, dec, money, GstLineInput } from "@/helpers/gst";
 import { buildQuery, paginationMeta } from "@/helpers/queryBuilder";
 import { ICreateInvoice, IUpdateInvoice, IInvoiceQuery } from "./invoice.interface";
+import { InventoryService } from "@/app/modules/inventory/inventory.service";
 
 const INVOICE_FILTER_FIELDS = [
   "invoiceNumber",
@@ -509,6 +510,44 @@ const updateInvoice = async (
       data: updateData,
       include: { items: true, customer: true },
     });
+
+    // ── Stock deduction / reversal on status transition ──────────────────
+    if (payload.status !== undefined && payload.status !== existing.status && userId) {
+      const org = await tx.organization.findUniqueOrThrow({
+        where: { id: organizationId },
+        select: { deductStockOn: true },
+      });
+
+      const triggerStatus = org.deductStockOn === "created" ? "draft" : "sent";
+
+      if (payload.status === triggerStatus || payload.status === "paid") {
+        const alreadyDeducted = await tx.stockMovement.count({
+          where: { referenceType: "invoice", referenceId: invoiceId, type: "sale" },
+        });
+        if (alreadyDeducted === 0) {
+          await InventoryService.deductStockForInvoice(
+            tx,
+            organizationId,
+            invoiceId,
+            updated.items.map((item) => ({
+              productId: item.productId,
+              productVariantId: item.productVariantId,
+              quantity: item.quantity,
+            })),
+            userId
+          );
+        }
+      }
+
+      if (payload.status === "cancelled") {
+        await InventoryService.reverseStockForInvoice(
+          tx,
+          organizationId,
+          invoiceId,
+          userId
+        );
+      }
+    }
 
     return addBalanceDue(updated);
   });

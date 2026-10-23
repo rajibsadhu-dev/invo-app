@@ -36,6 +36,7 @@ const PICKER_SELECT = {
   sellingPrice: true,
   gstRate: true,
   hasVariants: true,
+  stockQuantity: true,
 } as const;
 
 const PICKER_RESULT_LIMIT = 10;
@@ -171,6 +172,7 @@ const searchProducts = async (organizationId: number, term?: string) => {
           sku: true,
           sellingPrice: true,
           attributes: true,
+          stockQuantity: true,
         },
         orderBy: { name: "asc" },
       },

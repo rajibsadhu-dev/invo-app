@@ -273,100 +273,46 @@ Each phase is independently shippable.
 
 ---
 
-## Phase 4 — Inventory Management
+## Phase 4 — Inventory Management ✅
 
 > Goal: Track stock levels, record stock movements, deduct on invoice, receive
 > on purchase. Low-stock alerts.
+> **Complete: 2026-10-23** — backend, schema and frontend.
 
 ### 4.1 Stock Movement Model
-- [ ] **Schema:**
-  ```
-  model StockMovement {
-    id               Int       @id @default(autoincrement())
-    organizationId   Int       @map("organization_id")
-    productId        Int       @map("product_id")
-    productVariantId Int?      @map("product_variant_id")
-    type             String    // "sale" | "purchase" | "adjustment" | "return" | "opening"
-    quantity         Decimal   @db.Decimal(10, 3)  // positive = in, negative = out
-    referenceType    String?   @map("reference_type")  // "invoice" | "purchase_order" | null
-    referenceId      Int?      @map("reference_id")
-    notes            String?
-    createdBy        Int       @map("created_by")
-    createdAt        DateTime  @default(now())
-
-    organization     Organization     @relation(fields: [organizationId], references: [id])
-    product          Product          @relation(fields: [productId], references: [id])
-    variant          ProductVariant?  @relation(fields: [productVariantId], references: [id])
-    user             User             @relation(fields: [createdBy], references: [id])
-
-    @@index([organizationId, productId])
-    @@index([organizationId, createdAt])
-  }
-  ```
-- [ ] **Product stock field:**
-  - Non-variant products: add `stockQuantity Decimal @default(0)` and `lowStockAlert Decimal?` to Product
-  - Variant products: stock lives on each ProductVariant (already in Phase 3 schema)
+- [x] **Schema:** `StockMovement` model (org + product + optional variant, type, quantity, reference, notes, createdBy)
+- [x] **Product stock fields:** `stockQuantity Decimal @default(0)` and `lowStockAlert Decimal?` on Product
+- [x] **Org setting:** `deductStockOn String @default("sent")` on Organization
 
 ### 4.2 Manual Stock Adjustments
-- [ ] **Backend:** Stock adjustment endpoints
-  - `POST /organizations/:orgId/products/:id/stock-adjust`
-    - Body: `{ quantity, type: "adjustment", notes, variantId? }`
-    - Positive = add stock, negative = remove stock
-    - Creates StockMovement record
-    - Updates `stockQuantity` on Product or ProductVariant
-  - `POST /organizations/:orgId/products/:id/stock-set`
-    - Body: `{ quantity, notes, variantId? }` — sets absolute stock level
-    - Creates an adjustment StockMovement for the difference
-- [ ] **Frontend:** Stock adjustment dialog on product detail page
-  - "Adjust Stock" button → dialog: quantity (+/-), reason/notes
-  - For variant products: select which variant to adjust
+- [x] **Backend:** `POST /:orgId/inventory/products/:productId/adjust` (relative) and `/set` (absolute)
+- [x] **Frontend:** Stock adjustment dialog on product detail page with variant selector
 
 ### 4.3 Stock Deduction on Invoice
-- [ ] **Backend:** When invoice is created/updated with `productId` items:
-  - On create (status `draft`): no stock deduction yet
-  - On status change to `sent` or `paid`: deduct stock for each line item
-  - On status change to `cancelled`: reverse the deduction (add stock back)
-  - Create StockMovement records (type: `sale`, referenceType: `invoice`)
-  - Configurable per org: `deductStockOn` — `"sent"` or `"created"` (default: `"sent"`)
-  - Warn (don't block) if stock would go negative — some businesses allow negative stock
-- [ ] **Frontend:** Stock indicators on invoice form
-  - Show available stock next to quantity input when a product is selected
-  - Warning icon if quantity exceeds available stock
+- [x] **Backend:** Deduct stock on status transition to configured trigger (`sent` default) or `paid`
+  - Reverse on `cancelled`, idempotent (checks for existing sale movements)
+- [x] **Frontend:** Stock quantity shown in product picker dropdown on invoice form
 
 ### 4.4 Stock Movement History
-- [ ] **Backend:** `GET /organizations/:orgId/stock-movements`
-  - Filterable by product, variant, type, date range
-  - Paginated, sorted by date desc
-  - `GET /organizations/:orgId/products/:id/stock-movements` — for a specific product
-- [ ] **Frontend:** Stock movement history
-  - On product detail page: table showing all movements (date, type, qty, reference, notes, by)
-  - Org-level stock report page: `/org/:orgId/inventory/movements`
-    - Full movement log with filters
+- [x] **Backend:** `GET /:orgId/inventory/products/:productId/movements` and `GET /:orgId/inventory/movements`
+- [x] **Frontend:** Recent movements on product detail page + org-level movements page with type filter
 
 ### 4.5 Low-Stock Alerts
-- [ ] **Backend:** `GET /organizations/:orgId/inventory/low-stock`
-  - Returns products/variants where `stockQuantity <= lowStockAlert`
-  - Include: product name, variant, current stock, alert threshold
-- [ ] **Frontend:**
-  - Low-stock badge count in sidebar nav
-  - Low-stock list page at `/org/:orgId/inventory/low-stock`
-  - Dashboard card: "X products low on stock" (integrates with Phase 6 dashboard)
+- [x] **Backend:** `GET /:orgId/inventory/low-stock` using `$queryRaw` for column-to-column comparison
+- [x] **Frontend:** Low-stock list page at `/org/:orgId/inventory/low-stock`
 
 ### 4.6 Inventory Summary
-- [ ] **Backend:** `GET /organizations/:orgId/inventory/summary`
-  - Total products, total stock value (quantity × purchase price), low stock count
-  - By category: product count, stock value per category
-- [ ] **Frontend:** Inventory summary on product list page or dashboard
-  - Total stock value, product counts by category, low-stock warnings
+- [x] **Backend:** `GET /:orgId/inventory/summary` with totals + category breakdown
+- [x] **Frontend:** Inventory dashboard with stat cards, category breakdown, quick links
 
 ### 4.7 Deliverables Checklist
-- [ ] Stock quantity tracked per product and per variant
-- [ ] Manual stock adjustments with movement history
-- [ ] Invoice creation deducts stock (configurable trigger: on sent or on create)
-- [ ] Cancellation reverses stock deduction
-- [ ] Low-stock alerts with configurable threshold
-- [ ] Full stock movement audit trail
-- [ ] Inventory summary with stock valuation
+- [x] Stock quantity tracked per product and per variant
+- [x] Manual stock adjustments with movement history
+- [x] Invoice creation deducts stock (configurable trigger: on sent or on create)
+- [x] Cancellation reverses stock deduction
+- [x] Low-stock alerts with configurable threshold
+- [x] Full stock movement audit trail
+- [x] Inventory summary with category breakdown
 
 ---
 

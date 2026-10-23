@@ -159,9 +159,16 @@ export function ProductPickerCell({
                   {Number(product.gstRate)}% GST
                 </span>
               </span>
-              <span className="shrink-0 text-xs font-medium">
-                {formatINR(Number(product.sellingPrice))}
-                {product.unit ? ` / ${product.unit}` : ""}
+              <span className="shrink-0 text-right">
+                <span className="block text-xs font-medium">
+                  {formatINR(Number(product.sellingPrice))}
+                  {product.unit ? ` / ${product.unit}` : ""}
+                </span>
+                {!product.hasVariants && (
+                  <span className={`block text-[10px] ${Number(product.stockQuantity) <= 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                    {Number(product.stockQuantity)} in stock
+                  </span>
+                )}
               </span>
             </button>
           ))}
@@ -192,11 +199,16 @@ export function ProductPickerCell({
                   </span>
                 )}
               </span>
-              {variant.sellingPrice !== null && variant.sellingPrice !== undefined && (
-                <span className="shrink-0 text-xs font-medium">
-                  {formatINR(Number(variant.sellingPrice))}
+              <span className="shrink-0 text-right">
+                {variant.sellingPrice !== null && variant.sellingPrice !== undefined && (
+                  <span className="block text-xs font-medium">
+                    {formatINR(Number(variant.sellingPrice))}
+                  </span>
+                )}
+                <span className={`block text-[10px] ${Number(variant.stockQuantity) <= 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                  {Number(variant.stockQuantity)} in stock
                 </span>
-              )}
+              </span>
             </button>
           ))}
           <button

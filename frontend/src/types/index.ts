@@ -100,6 +100,7 @@ export type Organization = {
   businessType?: string | null
   invoicePrefix: string
   nextInvoiceNumber: number
+  deductStockOn: "sent" | "created"
   createdAt: string
   updatedAt: string
 }
@@ -359,6 +360,8 @@ export type Product = {
   sellingPrice: string
   purchasePrice?: string | null
   gstRate: string
+  stockQuantity: string
+  lowStockAlert?: string | null
   isActive: boolean
   hasVariants: boolean
   createdAt: string
@@ -377,6 +380,7 @@ export type ProductPickerHit = {
   unit?: string | null
   sellingPrice: string
   gstRate: string
+  stockQuantity: string
   hasVariants: boolean
   variants?: ProductVariantPickerHit[]
 }
@@ -426,6 +430,7 @@ export type ProductVariantPickerHit = {
   sku?: string | null
   sellingPrice?: string | null
   attributes: Record<string, string>
+  stockQuantity: string
 }
 
 export type CreateVariantPayload = {
@@ -469,3 +474,66 @@ export type CreateProductPayload = {
 }
 
 export type UpdateProductPayload = Partial<CreateProductPayload>
+
+// ─── Inventory / Stock ──────────────────────────────────────────────────────
+
+export type StockMovementType = "sale" | "purchase" | "adjustment" | "return" | "opening"
+
+export type StockMovement = {
+  id: number
+  organizationId: number
+  productId: number
+  productVariantId?: number | null
+  type: StockMovementType
+  quantity: string
+  referenceType?: string | null
+  referenceId?: number | null
+  notes?: string | null
+  createdBy: number
+  createdAt: string
+  product: { id: number; name: string; sku?: string | null }
+  variant?: { id: number; name: string; sku?: string | null } | null
+  user: { id: number; name: string }
+}
+
+export type StockAdjustPayload = {
+  quantity: number
+  type?: StockMovementType
+  notes?: string
+  variantId?: number
+}
+
+export type StockSetPayload = {
+  quantity: number
+  notes?: string
+  variantId?: number
+}
+
+export type LowStockItem = {
+  type: "product" | "variant"
+  id: number
+  productId?: number
+  productName?: string
+  name: string
+  sku?: string | null
+  stockQuantity: string
+  lowStockAlert: string
+}
+
+export type LowStockResult = {
+  products: LowStockItem[]
+  variants: LowStockItem[]
+  totalCount: number
+}
+
+export type InventorySummary = {
+  totalProducts: number
+  totalProductStock: string
+  totalVariantStock: string
+  lowStockCount: number
+  byCategory: Array<{
+    categoryId: number | null
+    categoryName: string
+    productCount: number
+  }>
+}

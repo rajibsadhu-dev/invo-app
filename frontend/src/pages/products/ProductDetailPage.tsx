@@ -10,6 +10,7 @@ import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { formatINR } from "@/lib/money"
 import { ProductFormDialog } from "./ProductFormDialog"
 import { VariantSection } from "./VariantSection"
+import { StockSection } from "./StockSection"
 
 function Field({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
@@ -120,6 +121,8 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      <StockSection orgId={id} product={product} />
 
       <VariantSection orgId={id} product={product} />
 
