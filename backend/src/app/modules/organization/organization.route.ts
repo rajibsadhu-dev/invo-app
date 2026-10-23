@@ -12,6 +12,8 @@ import { InviteController } from "./invite.controller";
 import { InviteValidation } from "./invite.validation";
 import { CustomerRoutes } from "@/app/modules/customer/customer.route";
 import { InvoiceRoutes } from "@/app/modules/invoice/invoice.route";
+import { CategoryRoutes } from "@/app/modules/category/category.route";
+import { ProductRoutes } from "@/app/modules/product/product.route";
 
 const router = Router();
 
@@ -75,6 +77,10 @@ router.use("/:id/customers", CustomerRoutes);
 
 // Invoice routes — permission-guarded per-action inside the sub-router
 router.use("/:id/invoices", InvoiceRoutes);
+
+// Catalogue routes — guarded by the product permissions inside the sub-routers
+router.use("/:id/categories", CategoryRoutes);
+router.use("/:id/products", ProductRoutes);
 
 // Logo upload — owner or admin
 router.post(

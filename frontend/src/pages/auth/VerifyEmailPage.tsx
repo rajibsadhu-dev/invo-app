@@ -71,8 +71,8 @@ export default function VerifyEmailPage() {
               </>
             )}
 
-            <Button asChild className="w-full">
-              <Link to="/">Go to Dashboard</Link>
+            <Button render={<Link to="/" />} className="w-full">
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>

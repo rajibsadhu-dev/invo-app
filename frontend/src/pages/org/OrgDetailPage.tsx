@@ -13,6 +13,7 @@ import {
   MapPin,
   Hash,
   FileText,
+  Briefcase,
   Upload,
   UserRoundCog,
 } from "lucide-react"
@@ -51,6 +52,8 @@ import { useAppSelector } from "@/store/hooks"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { Organization } from "@/types"
 import { getApiErrorMessage } from "@/lib/apiError"
+import { BUSINESS_TYPE_LIST_ID } from "@/lib/businessTypes"
+import { BusinessTypeOptions } from "@/components/form/BusinessTypeOptions"
 
 // ─── Edit Dialog ───────────────────────────────────────────────────────────────
 
@@ -66,6 +69,7 @@ const editSchema = z.object({
     .regex(/^\d{2}$/, "Two-digit GST state code (e.g. 27)")
     .optional()
     .or(z.literal("")),
+  businessType: z.string().max(60, "Max 60 characters").optional(),
   invoicePrefix: z.string().max(6, "Prefix max 6 chars").optional(),
 })
 
@@ -94,6 +98,7 @@ function EditOrgDialog({
       registerNumber: org.registerNumber ?? "",
       gstNumber: org.gstNumber ?? "",
       stateCode: org.stateCode ?? "",
+      businessType: org.businessType ?? "",
       invoicePrefix: org.invoicePrefix,
     },
   })
@@ -107,6 +112,7 @@ function EditOrgDialog({
       registerNumber: org.registerNumber ?? "",
       gstNumber: org.gstNumber ?? "",
       stateCode: org.stateCode ?? "",
+      businessType: org.businessType ?? "",
       invoicePrefix: org.invoicePrefix,
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,6 +130,7 @@ function EditOrgDialog({
           registerNumber: values.registerNumber || undefined,
           gstNumber: values.gstNumber || undefined,
           stateCode: values.stateCode || undefined,
+          businessType: values.businessType || undefined,
           invoicePrefix: values.invoicePrefix || undefined,
         },
       }).unwrap()
@@ -177,6 +184,15 @@ function EditOrgDialog({
             placeholder="e.g. 27"
             description="Two digits — required to raise GST invoices"
           />
+          <InvoInput
+            control={form.control}
+            name="businessType"
+            label="Business Type"
+            placeholder="e.g. Trading"
+            list={BUSINESS_TYPE_LIST_ID}
+            description="Pick a suggestion or type your own"
+          />
+          <BusinessTypeOptions />
           <InvoInput
             control={form.control}
             name="invoicePrefix"
@@ -482,6 +498,11 @@ export default function OrgDetailPage() {
               icon={Hash}
               label="GST Number"
               value={org.gstNumber}
+            />
+            <DetailRow
+              icon={Briefcase}
+              label="Business Type"
+              value={org.businessType}
             />
             <DetailRow
               icon={FileText}

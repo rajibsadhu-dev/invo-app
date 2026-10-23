@@ -55,8 +55,8 @@ export default function ResetPasswordPage() {
               <p className="text-center text-sm text-muted-foreground">
                 Invalid reset link. Please request a new one.
               </p>
-              <Button asChild className="w-full">
-                <Link to="/forgot-password">Request new link</Link>
+              <Button render={<Link to="/forgot-password" />} className="w-full">
+                Request new link
               </Button>
             </CardContent>
           </Card>
@@ -88,8 +88,8 @@ export default function ResetPasswordPage() {
                 <p className="text-center text-sm text-muted-foreground">
                   Your password has been reset. Please sign in with your new password.
                 </p>
-                <Button asChild className="w-full">
-                  <Link to="/login">Sign in</Link>
+                <Button render={<Link to="/login" />} className="w-full">
+                  Sign in
                 </Button>
               </div>
             ) : (

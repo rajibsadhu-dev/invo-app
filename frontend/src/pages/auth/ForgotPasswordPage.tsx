@@ -62,10 +62,8 @@ export default function ForgotPasswordPage() {
                   If that email is registered, a password reset link has been sent.
                   Please check your inbox.
                 </p>
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/login">
-                    <ArrowLeft className="h-4 w-4" /> Back to sign in
-                  </Link>
+                <Button render={<Link to="/login" />} variant="outline" className="w-full">
+                  <ArrowLeft className="h-4 w-4" /> Back to sign in
                 </Button>
               </div>
             ) : (

@@ -2,6 +2,11 @@ import { InvoiceStatus, OrgRole, PaymentMethod } from "@prisma/client";
 
 export type IInvoiceItem = {
   description: string;
+  /**
+   * Catalogue product the line was picked from. Optional: hand-typed lines stay
+   * supported, and the descriptive fields are copied onto the line either way.
+   */
+  productId?: number | null;
   hsnCode?: string | null;
   unit?: string | null;
   quantity: number;

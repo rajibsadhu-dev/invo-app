@@ -105,16 +105,18 @@ Each phase is independently shippable.
 
 ---
 
-## Phase 2 — Business Type & Product Catalogue
+## Phase 2 — Business Type & Product Catalogue ✅
 
 > Goal: Org declares its business type at setup. Users create a product catalogue
 > with categories. Invoice form auto-fills from products.
+> **Complete: 2026-09-10** — backend, schema and frontend.
+
 
 ### 2.1 Business Type on Organization
-- [ ] **Schema:** Add `businessType String?` to Organization model
-- [ ] **Backend:** Accept `businessType` in create/update org payloads
+- [x] **Schema:** Add `businessType String?` to Organization model
+- [x] **Backend:** Accept `businessType` in create/update org payloads
   - No enum constraint — free text stored as-is
-- [ ] **Frontend:** Business type field on org create + edit forms
+- [x] **Frontend:** Business type field on org create + edit forms
   - Combobox with suggested values + free text input
   - Suggestions: `Trading`, `Manufacturing`, `Services`, `Construction`, `Retail`,
     `Wholesale`, `Import/Export`, `Consulting`, `Freelancing`, `Healthcare`,
@@ -122,7 +124,7 @@ Each phase is independently shippable.
   - Shown during org setup (Phase 1 registration) and editable in org settings
 
 ### 2.2 Product Categories
-- [ ] **Schema:**
+- [x] **Schema:**
   ```
   model ProductCategory {
     id             Int       @id @default(autoincrement())
@@ -143,18 +145,18 @@ Each phase is independently shippable.
     @@index([organizationId])
   }
   ```
-- [ ] **Backend:** Category module — CRUD
+- [x] **Backend:** Category module — CRUD
   - `GET /organizations/:orgId/categories` — returns flat list or tree structure
   - `POST /organizations/:orgId/categories` — create (name, description, parentId)
   - `PATCH /organizations/:orgId/categories/:id` — update
   - `DELETE /organizations/:orgId/categories/:id` — refuse if products exist in category
-- [ ] **Frontend:** Category management page at `/org/:orgId/products/categories`
+- [x] **Frontend:** Category management page at `/org/:orgId/products/categories`
   - Tree view or nested list
   - Add/edit/delete with inline forms or dialogs
   - Drag-and-drop reordering (nice to have)
 
 ### 2.3 Products (Basic Catalogue)
-- [ ] **Schema:**
+- [x] **Schema:**
   ```
   model Product {
     id             Int       @id @default(autoincrement())
@@ -183,7 +185,7 @@ Each phase is independently shippable.
     @@index([organizationId, name])
   }
   ```
-- [ ] **Backend:** Product module — CRUD
+- [x] **Backend:** Product module — CRUD
   - `GET /organizations/:orgId/products` — list with search, category filter, pagination
   - `GET /organizations/:orgId/products/search?q=` — lightweight search for invoice form picker
     - Returns `[{ id, name, sku, hsnCode, unit, sellingPrice, gstRate, hasVariants }]`
@@ -192,7 +194,7 @@ Each phase is independently shippable.
   - `PATCH /organizations/:orgId/products/:id` — update
   - `DELETE /organizations/:orgId/products/:id` — soft delete (set `isActive = false`) if used in invoices, hard delete otherwise
   - `GET /organizations/:orgId/products/:id` — detail with variants
-- [ ] **Frontend:** Product pages
+- [x] **Frontend:** Product pages
   - Product list page at `/org/:orgId/products`
     - Table: name, SKU, category, price, GST%, stock, status
     - Filter by category, search by name/SKU
@@ -202,25 +204,25 @@ Each phase is independently shippable.
   - Product detail page at `/org/:orgId/products/:id`
 
 ### 2.4 Invoice Form — Product Picker Integration
-- [ ] **Frontend:** Upgrade invoice line item rows
+- [x] **Frontend:** Upgrade invoice line item rows
   - Product search combobox in the description/item column
   - Type to search → dropdown shows matching products (name + SKU)
   - Selecting a product auto-fills: description (product name), HSN, unit, rate, GST%
   - User can override any auto-filled value
   - User can also type a custom description (not from catalogue) — free text still works
   - Store `productId` on InvoiceItem for traceability (optional FK, null for custom items)
-- [ ] **Schema:** Add `productId Int?` and `productVariantId Int?` to InvoiceItem
-- [ ] **Backend:** Accept `productId` and `productVariantId` in create/update invoice payloads
+- [x] **Schema:** Add `productId Int?` and `productVariantId Int?` to InvoiceItem
+- [x] **Backend:** Accept `productId` and `productVariantId` in create/update invoice payloads
   - If `productId` is provided, validate it exists and belongs to the org
   - Auto-fill fields from product if not explicitly provided
 
 ### 2.5 Deliverables Checklist
-- [ ] Org has a business type field (free text + suggestions)
-- [ ] Product categories with nesting
-- [ ] Full product CRUD with HSN, price, GST rate, unit
-- [ ] Product search on invoice form auto-fills line items
-- [ ] Custom (non-catalogue) line items still work
-- [ ] Products list page with search and category filter
+- [x] Org has a business type field (free text + suggestions)
+- [x] Product categories with nesting
+- [x] Full product CRUD with HSN, price, GST rate, unit
+- [x] Product search on invoice form auto-fills line items
+- [x] Custom (non-catalogue) line items still work
+- [x] Products list page with search and category filter
 
 ---
 
@@ -802,7 +804,7 @@ Each phase is independently shippable.
 
 ## Technical Debt (Fix Alongside Features)
 
-- [ ] `npm run typecheck` — change to `tsc -b` (currently no-op under project references)
+- [x] `npm run typecheck` — now `tsc -b`; the errors it exposed are fixed (2026-09-10)
 - [ ] Frontend bundle splitting — route-level lazy loading (currently 878 kB single chunk)
 - [ ] Backend ESLint config
 - [ ] Test suite — Vitest + Supertest for backend, Vitest + Testing Library for frontend

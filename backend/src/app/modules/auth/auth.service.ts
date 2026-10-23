@@ -53,6 +53,7 @@ type IRegisterPayload = {
   email: string;
   password: string;
   orgName: string;
+  businessType?: string;
 };
 
 const register = async (
@@ -85,6 +86,7 @@ const register = async (
       data: {
         name: payload.orgName,
         ownerId: user.id,
+        businessType: payload.businessType || null,
         invoicePrefix: "INV",
       },
     });

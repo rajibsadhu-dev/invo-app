@@ -12,6 +12,7 @@ const createOrganization = async (ownerId: number, payload: ICreateOrganization)
         ...payload,
         ownerId,
         email: payload.email || null,
+        businessType: payload.businessType || null,
         invoicePrefix: payload.invoicePrefix || "INV",
       },
     });
@@ -53,8 +54,11 @@ const updateOrganization = async (id: number, payload: IUpdateOrganization) => {
     where: { id },
     data: {
       ...payload,
-      // Only coerce email to null when it's explicitly provided as an empty string
+      // Only coerce to null when explicitly provided as an empty string
       ...(payload.email !== undefined && { email: payload.email || null }),
+      ...(payload.businessType !== undefined && {
+        businessType: payload.businessType || null,
+      }),
     },
   });
 };

@@ -11,6 +11,8 @@ import { useRegisterMutation } from "@/features/auth/authApi"
 import { setCredentials } from "@/features/auth/authSlice"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { getApiErrorMessage } from "@/lib/apiError"
+import { BUSINESS_TYPE_LIST_ID } from "@/lib/businessTypes"
+import { BusinessTypeOptions } from "@/components/form/BusinessTypeOptions"
 
 const registerSchema = z
   .object({
@@ -19,6 +21,7 @@ const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(1, "Confirm your password"),
     orgName: z.string().min(2, "Organization name must be at least 2 characters"),
+    businessType: z.string().max(60, "Max 60 characters").optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -35,7 +38,14 @@ export default function RegisterPage() {
 
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "", orgName: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      orgName: "",
+      businessType: "",
+    },
   })
 
   useEffect(() => {
@@ -49,6 +59,7 @@ export default function RegisterPage() {
         email: values.email,
         password: values.password,
         orgName: values.orgName,
+        businessType: values.businessType || undefined,
       }).unwrap()
       dispatch(setCredentials({ user: res.data.user, accessToken: res.data.accessToken }))
       navigate("/", { replace: true })
@@ -118,6 +129,15 @@ export default function RegisterPage() {
                 placeholder="Your business name"
                 required
               />
+              <InvoInput
+                control={form.control}
+                name="businessType"
+                label="Business Type"
+                placeholder="e.g. Trading"
+                list={BUSINESS_TYPE_LIST_ID}
+                description="Pick a suggestion or type your own"
+              />
+              <BusinessTypeOptions />
               {apiError && (
                 <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {apiError}

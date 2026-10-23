@@ -45,7 +45,7 @@ export default function EditInvoicePage() {
       customerId: 0,
       invoiceDate: todayString(),
       items: [
-        { description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
+        { productId: null, description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
       ],
       discount: 0,
       receivedAmount: 0,
@@ -61,6 +61,7 @@ export default function EditInvoicePage() {
         ? new Date(invoice.invoiceDate).toISOString().split("T")[0]
         : todayString(),
       items: (invoice.items ?? []).map((item) => ({
+        productId: item.productId ?? null,
         description: item.description,
         hsnCode: item.hsnCode ?? "",
         unit: item.unit ?? "",
@@ -146,6 +147,7 @@ export default function EditInvoicePage() {
       <InvoForm form={form} onSubmit={onSubmit}>
         <InvoiceFormFields
           form={form}
+          orgId={oId}
           customers={customers}
           orgStateCode={org?.stateCode}
           isSubmitting={isSaving}

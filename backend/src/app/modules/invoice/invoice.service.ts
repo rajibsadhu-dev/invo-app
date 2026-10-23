@@ -121,9 +121,40 @@ const resolvePlaceOfSupply = (
   };
 };
 
+/**
+ * A line may cite a catalogue product. Anything not in this organization's catalogue is
+ * refused rather than stored: a foreign id would put another business's product on this
+ * invoice, and the FK alone cannot tell the two apart.
+ */
+const assertProductsInOrg = async (
+  tx: Prisma.TransactionClient,
+  organizationId: number,
+  lines: GstLineInput[]
+): Promise<void> => {
+  const ids = [
+    ...new Set(
+      lines
+        .map((line) => line.productId)
+        .filter((id): id is number => typeof id === "number")
+    ),
+  ];
+  if (ids.length === 0) return;
+
+  const found = await tx.product.count({
+    where: { id: { in: ids }, organizationId },
+  });
+  if (found !== ids.length) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "One or more products on this invoice were not found in this organization"
+    );
+  }
+};
+
 const toLineInputs = (items: ICreateInvoice["items"]): GstLineInput[] =>
   items.map((item) => ({
     description: item.description,
+    productId: item.productId ?? null,
     hsnCode: item.hsnCode || null,
     unit: item.unit ?? null,
     quantity: item.quantity,
@@ -199,6 +230,7 @@ const createInvoice = async (organizationId: number, payload: ICreateInvoice, cr
     if (!customer) throw new ApiError(httpStatus.NOT_FOUND, "Customer not found");
 
     const lines = toLineInputs(payload.items);
+    await assertProductsInOrg(tx, organizationId, lines);
     const hasGst = lines.some((l) => Number(l.gstRate ?? 0) > 0);
 
     // Reserve the number by incrementing first and using what comes back. Reading the
@@ -385,6 +417,7 @@ const updateInvoice = async (
         payload.items ??
         existing.items.map((item) => ({
           description: item.description,
+          productId: item.productId,
           hsnCode: item.hsnCode,
           unit: item.unit,
           quantity: Number(item.quantity),
@@ -393,6 +426,7 @@ const updateInvoice = async (
         }));
 
       const lines = toLineInputs(sourceItems);
+      await assertProductsInOrg(tx, organizationId, lines);
       const hasGst = lines.some((l) => Number(l.gstRate ?? 0) > 0);
 
       const org = await tx.organization.findUniqueOrThrow({

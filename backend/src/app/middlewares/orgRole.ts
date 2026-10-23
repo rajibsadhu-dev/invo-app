@@ -15,7 +15,13 @@ export type OrgPermission =
   | "customer:create"
   | "customer:edit"
   | "customer:delete"
-  | "customer:view";
+  | "customer:view"
+  // Product permissions also guard the category routes: categories exist only to
+  // organise the catalogue, so managing one is managing the catalogue.
+  | "product:create"
+  | "product:edit"
+  | "product:delete"
+  | "product:view";
 
 const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
   owner: new Set([
@@ -30,6 +36,10 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "customer:edit",
     "customer:delete",
     "customer:view",
+    "product:create",
+    "product:edit",
+    "product:delete",
+    "product:view",
   ]),
   admin: new Set([
     "org:manage",
@@ -43,6 +53,10 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "customer:edit",
     "customer:delete",
     "customer:view",
+    "product:create",
+    "product:edit",
+    "product:delete",
+    "product:view",
   ]),
   manager: new Set([
     "org:invite",
@@ -54,6 +68,10 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "customer:edit",
     "customer:delete",
     "customer:view",
+    "product:create",
+    "product:edit",
+    "product:delete",
+    "product:view",
   ]),
   staff: new Set([
     "invoice:create",
@@ -62,10 +80,13 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "customer:create",
     "customer:edit",
     "customer:view",
+    // Read-only on the catalogue: staff raise invoices from it, they do not price it.
+    "product:view",
   ]),
   viewer: new Set([
     "invoice:view",
     "customer:view",
+    "product:view",
   ]),
 };
 

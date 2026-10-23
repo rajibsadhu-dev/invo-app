@@ -94,7 +94,9 @@ function MemberRow({
   const [updateRole] = useUpdateMemberRoleMutation()
   const [removeMember, { isLoading: isRemoving }] = useRemoveMemberMutation()
 
-  const handleRoleChange = async (role: string) => {
+  const handleRoleChange = async (role: string | null) => {
+    // base-ui's Select can report null (cleared); there is no "no role" state here.
+    if (!role) return
     try {
       await updateRole({ orgId, memberId: member.id, role: role as OrgRole }).unwrap()
       toast.success("Role updated")
@@ -155,10 +157,10 @@ function MemberRow({
 
       {canManage && !isCurrentUser && member.role !== "owner" && (
         <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-destructive">
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          <AlertDialogTrigger
+            render={<Button variant="ghost" size="icon" className="text-destructive" />}
+          >
+            <Trash2 className="h-4 w-4" />
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>

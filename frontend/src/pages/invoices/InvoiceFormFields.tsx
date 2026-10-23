@@ -17,6 +17,7 @@ import {
   type InvoiceFormValues,
 } from "./invoiceForm.schema"
 import type { Customer } from "@/types"
+import { ProductPickerCell } from "./ProductPickerCell"
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
 
@@ -43,6 +44,8 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 type Props = {
   form: UseFormReturn<InvoiceFormValues>
+  /** Needed for the line-item catalogue lookup. */
+  orgId: number
   customers: Customer[]
   /** Supplier's GST state code — compared with the customer's to pick CGST+SGST vs IGST. */
   orgStateCode?: string | null
@@ -52,6 +55,7 @@ type Props = {
 
 export function InvoiceFormFields({
   form,
+  orgId,
   customers,
   orgStateCode,
   isSubmitting,
@@ -117,11 +121,17 @@ export function InvoiceFormFields({
       {/* ── Line Items ── */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <FieldLabel>Items</FieldLabel>
+          <div className="flex flex-col">
+            <FieldLabel>Items</FieldLabel>
+            <span className="text-xs text-muted-foreground">
+              Type in Description to search the catalogue, or write the item out by hand.
+            </span>
+          </div>
           <Button
             type="button" size="sm" variant="outline"
             onClick={() =>
               append({
+                productId: null,
                 description: "",
                 hsnCode: "",
                 unit: getDefaultUnit(),
@@ -167,11 +177,7 @@ export function InvoiceFormFields({
                 return (
                   <tr key={field.id}>
                     <td className="px-3 py-1.5">
-                      <Input
-                        {...register(`items.${index}.description`)}
-                        placeholder="Item description"
-                        className="h-8 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0"
-                      />
+                      <ProductPickerCell form={form} orgId={orgId} index={index} />
                       {errors.items?.[index]?.description && (
                         <p className="text-xs text-destructive">{errors.items[index]!.description!.message}</p>
                       )}

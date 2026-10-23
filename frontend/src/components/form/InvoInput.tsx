@@ -8,6 +8,8 @@ type InvoInputProps<T extends FieldValues> = BaseFieldProps<T> & {
   type?: React.HTMLInputTypeAttribute
   placeholder?: string
   autoComplete?: string
+  /** id of a <datalist> to suggest from. Values stay free text. */
+  list?: string
 }
 
 /**
@@ -21,6 +23,7 @@ export function InvoInput<T extends FieldValues>({
   type = "text",
   placeholder,
   autoComplete,
+  list,
   disabled,
   ...fieldProps
 }: InvoInputProps<T>) {
@@ -66,6 +69,7 @@ export function InvoInput<T extends FieldValues>({
             type={resolvedType}
             placeholder={placeholder}
             autoComplete={autoComplete}
+            list={list}
             disabled={disabled}
             aria-invalid={!!fieldState.error}
             value={field.value ?? ""}

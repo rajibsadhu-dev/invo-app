@@ -38,6 +38,8 @@ import {
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import type { Organization } from "@/types"
 import { getApiErrorMessage } from "@/lib/apiError"
+import { BUSINESS_TYPE_LIST_ID } from "@/lib/businessTypes"
+import { BusinessTypeOptions } from "@/components/form/BusinessTypeOptions"
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -53,6 +55,7 @@ const createOrgSchema = z.object({
     .regex(/^\d{2}$/, "Two-digit GST state code (e.g. 27)")
     .optional()
     .or(z.literal("")),
+  businessType: z.string().max(60, "Max 60 characters").optional(),
   invoicePrefix: z.string().max(6, "Prefix max 6 chars").optional(),
 })
 
@@ -74,6 +77,7 @@ function CreateOrgDialog() {
       registerNumber: "",
       gstNumber: "",
       stateCode: "",
+      businessType: "",
       invoicePrefix: "",
     },
   })
@@ -88,6 +92,7 @@ function CreateOrgDialog() {
         ...(values.registerNumber && { registerNumber: values.registerNumber }),
         ...(values.gstNumber && { gstNumber: values.gstNumber }),
         ...(values.stateCode && { stateCode: values.stateCode }),
+        ...(values.businessType && { businessType: values.businessType }),
         ...(values.invoicePrefix && { invoicePrefix: values.invoicePrefix }),
       }
       await createOrg(payload).unwrap()
@@ -132,6 +137,15 @@ function CreateOrgDialog() {
               description="Two digits — required for GST invoices"
             />
           </div>
+          <InvoInput
+            control={form.control}
+            name="businessType"
+            label="Business Type"
+            placeholder="e.g. Trading"
+            list={BUSINESS_TYPE_LIST_ID}
+            description="Pick a suggestion or type your own"
+          />
+          <BusinessTypeOptions />
           <InvoInput
             control={form.control}
             name="invoicePrefix"

@@ -84,3 +84,19 @@
 - [ ] `npm run typecheck` is a no-op under project references — change it to `tsc -b`
 - [ ] Bundle is 878 kB; route-level code splitting
 - [ ] Phase 7 dashboard analytics (unchanged, still pending)
+
+## Phase 9: Product Catalogue (ROADMAP Phase 2)
+- [x] Business type combobox (suggestions + free text) on org create/edit + registration
+- [x] Category API endpoints (RTK Query)
+- [x] Category management page at `/org/:orgId/products/categories` (nested list + dialogs)
+- [x] Product API endpoints (RTK Query)
+- [x] Product list page at `/org/:orgId/products` (search, category filter, pagination)
+- [x] Add/Edit product form (name, SKU, category, HSN, unit, prices, GST rate, variants toggle)
+- [x] Product detail page at `/org/:orgId/products/:id`
+- [x] Invoice form: product picker in line items with auto-fill (HSN, unit, rate, GST%), custom text still allowed
+- [x] `tsc -b`, `npm run lint` (0 errors) and `npm run build` clean
+- [x] Fixed pre-existing type errors: `asChild` is a Radix API and did nothing on this
+      project's base-ui Button — 9 sites across the auth pages + TeamPage now use `render`
+- [x] `npm run typecheck` switched from `tsc --noEmit` (a no-op under project references)
+      to `tsc -b`, which is what surfaced those errors
+- [ ] Not verified in a browser yet — API paths are covered by the backend smoke test

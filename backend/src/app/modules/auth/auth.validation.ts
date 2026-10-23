@@ -14,6 +14,11 @@ const registerSchema = z.object({
     orgName: z
       .string({ error: "Organization name is required" })
       .min(2, "Organization name must be at least 2 characters"),
+    businessType: z
+      .string()
+      .max(60, "Business type must be at most 60 characters")
+      .optional()
+      .or(z.literal("")),
   }),
 });
 

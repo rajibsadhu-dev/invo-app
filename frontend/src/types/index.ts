@@ -35,6 +35,7 @@ export type RegisterPayload = {
   email: string
   password: string
   orgName: string
+  businessType?: string
 }
 
 export type LoginPayload = {
@@ -95,6 +96,8 @@ export type Organization = {
   registerNumber?: string | null
   gstNumber?: string | null
   stateCode?: string | null
+  /** Free text — what the business does. Drives invoice-form field visibility later. */
+  businessType?: string | null
   invoicePrefix: string
   nextInvoiceNumber: number
   createdAt: string
@@ -109,6 +112,7 @@ export type CreateOrgPayload = {
   registerNumber?: string
   gstNumber?: string
   stateCode?: string
+  businessType?: string
   invoicePrefix?: string
 }
 
@@ -210,6 +214,8 @@ export type PaymentMethod = "cash" | "bank" | "upi"
 export type InvoiceItem = {
   id: number
   invoiceId: number
+  /** Set when the line came from the catalogue; null for a hand-typed line. */
+  productId?: number | null
   description: string
   hsnCode?: string | null
   unit?: string | null
@@ -270,6 +276,7 @@ export type Invoice = {
 }
 
 export type InvoiceItemPayload = {
+  productId?: number | null
   description: string
   hsnCode?: string | null
   unit?: string | null
@@ -302,3 +309,85 @@ export type CreateInvoicePayload = {
 export type UpdateInvoicePayload = Partial<CreateInvoicePayload> & {
   status?: InvoiceStatus
 }
+
+// ─── Product Catalogue ────────────────────────────────────────────────────────
+
+export type ProductCategory = {
+  id: number
+  organizationId: number
+  name: string
+  description?: string | null
+  parentId?: number | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+  _count?: { products: number; children?: number }
+}
+
+/** What `GET /categories?tree=true` returns: the same rows, nested. */
+export type ProductCategoryNode = ProductCategory & {
+  children: ProductCategoryNode[]
+}
+
+export type ProductCategoryDetail = ProductCategory & {
+  parent?: { id: number; name: string } | null
+  children?: { id: number; name: string }[]
+}
+
+export type CreateCategoryPayload = {
+  name: string
+  description?: string | null
+  parentId?: number | null
+  sortOrder?: number
+}
+
+export type UpdateCategoryPayload = Partial<CreateCategoryPayload>
+
+/** Decimal columns arrive as strings, the same as invoice money fields. */
+export type Product = {
+  id: number
+  organizationId: number
+  categoryId?: number | null
+  name: string
+  sku?: string | null
+  description?: string | null
+  hsnCode?: string | null
+  unit?: string | null
+  sellingPrice: string
+  purchasePrice?: string | null
+  gstRate: string
+  isActive: boolean
+  hasVariants: boolean
+  createdAt: string
+  updatedAt: string
+  category?: { id: number; name: string } | null
+  _count?: { invoiceItems: number }
+}
+
+/** Trimmed shape returned by the invoice-form picker endpoint. */
+export type ProductPickerHit = {
+  id: number
+  name: string
+  sku?: string | null
+  hsnCode?: string | null
+  unit?: string | null
+  sellingPrice: string
+  gstRate: string
+  hasVariants: boolean
+}
+
+export type CreateProductPayload = {
+  name: string
+  sku?: string | null
+  description?: string | null
+  categoryId?: number | null
+  hsnCode?: string | null
+  unit?: string | null
+  sellingPrice: number
+  purchasePrice?: number | null
+  gstRate?: number
+  isActive?: boolean
+  hasVariants?: boolean
+}
+
+export type UpdateProductPayload = Partial<CreateProductPayload>

@@ -45,8 +45,8 @@ export default function AcceptInvitePage() {
             <p className="text-center text-sm text-muted-foreground">
               Invalid invitation link.
             </p>
-            <Button asChild className="w-full">
-              <Link to="/">Go to Dashboard</Link>
+            <Button render={<Link to="/" />} className="w-full">
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -71,15 +71,26 @@ export default function AcceptInvitePage() {
                 Please sign in or create an account to accept this invitation.
               </p>
               <div className="flex w-full gap-2">
-                <Button asChild className="flex-1">
-                  <Link to={`/login?redirect=${encodeURIComponent(`/accept-invite?token=${token}`)}`}>
-                    Sign in
-                  </Link>
+                <Button
+                  render={
+                    <Link
+                      to={`/login?redirect=${encodeURIComponent(`/accept-invite?token=${token}`)}`}
+                    />
+                  }
+                  className="flex-1"
+                >
+                  Sign in
                 </Button>
-                <Button asChild variant="outline" className="flex-1">
-                  <Link to={`/register?redirect=${encodeURIComponent(`/accept-invite?token=${token}`)}`}>
-                    Sign up
-                  </Link>
+                <Button
+                  render={
+                    <Link
+                      to={`/register?redirect=${encodeURIComponent(`/accept-invite?token=${token}`)}`}
+                    />
+                  }
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Sign up
                 </Button>
               </div>
             </CardContent>
@@ -115,8 +126,8 @@ export default function AcceptInvitePage() {
               <>
                 <XCircle className="h-12 w-12 text-destructive" />
                 <p className="text-center text-sm text-destructive">{apiError}</p>
-                <Button asChild className="w-full">
-                  <Link to="/">Go to Dashboard</Link>
+                <Button render={<Link to="/" />} className="w-full">
+                  Go to Dashboard
                 </Button>
               </>
             )}

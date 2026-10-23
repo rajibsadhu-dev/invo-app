@@ -1,0 +1,135 @@
+import { useEffect, useRef, useState } from "react"
+import type { UseFormReturn } from "react-hook-form"
+import { Loader2, Package } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { useSearchProductsQuery } from "@/features/product/productApi"
+import { formatINR } from "@/lib/money"
+import type { ProductPickerHit } from "@/types"
+import type { InvoiceFormValues } from "./invoiceForm.schema"
+
+const DEBOUNCE_MS = 250
+
+/**
+ * The description cell of an invoice line, with catalogue lookup attached.
+ *
+ * Typing searches products by name and SKU; picking one fills in description, HSN, unit,
+ * rate and GST rate, and records `productId` so the line can be traced back to the
+ * catalogue. Nothing is forced: the field stays free text, and a line typed by hand keeps
+ * `productId` null. Any auto-filled value can be overwritten afterwards.
+ */
+export function ProductPickerCell({
+  form,
+  orgId,
+  index,
+}: {
+  form: UseFormReturn<InvoiceFormValues>
+  orgId: number
+  index: number
+}) {
+  const { register, setValue, getValues } = form
+  const [term, setTerm] = useState("")
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
+
+  const descriptionField = register(`items.${index}.description`)
+
+  const { data, isFetching } = useSearchProductsQuery(
+    { orgId, q: term },
+    { skip: term.trim().length < 2 }
+  )
+  const hits = data?.data ?? []
+
+  // Close on an outside click, the same way InvoCombobox does.
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", onPointerDown)
+    return () => document.removeEventListener("mousedown", onPointerDown)
+  }, [open])
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+  }, [])
+
+  const queueSearch = (value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setTerm(value), DEBOUNCE_MS)
+  }
+
+  const applyProduct = (product: ProductPickerHit) => {
+    setValue(`items.${index}.productId`, product.id, { shouldDirty: true })
+    setValue(`items.${index}.description`, product.name, { shouldDirty: true })
+    setValue(`items.${index}.hsnCode`, product.hsnCode ?? "", { shouldDirty: true })
+    setValue(`items.${index}.unit`, product.unit ?? "", { shouldDirty: true })
+    setValue(`items.${index}.rate`, Number(product.sellingPrice), { shouldDirty: true })
+    setValue(`items.${index}.gstRate`, Number(product.gstRate), { shouldDirty: true })
+    setOpen(false)
+    setTerm("")
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Input
+        {...descriptionField}
+        onChange={(e) => {
+          descriptionField.onChange(e)
+          // Editing the text by hand detaches the line from the catalogue: what is on the
+          // invoice is no longer what the product says it is.
+          if (getValues(`items.${index}.productId`)) {
+            setValue(`items.${index}.productId`, null, { shouldDirty: true })
+          }
+          queueSearch(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder="Search the catalogue or type an item"
+        autoComplete="off"
+        className="h-8 border-0 bg-transparent px-2 shadow-none focus-visible:ring-0"
+      />
+
+      {open && term.trim().length >= 2 && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-80 overflow-hidden rounded-lg border bg-popover shadow-md">
+          {isFetching && (
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
+            </div>
+          )}
+          {!isFetching && hits.length === 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+              <Package className="h-3.5 w-3.5" /> No products match — this line stays as
+              typed
+            </div>
+          )}
+          {hits.map((product) => (
+            <button
+              key={product.id}
+              type="button"
+              // mousedown, not click: the input's blur would tear the list down first.
+              onMouseDown={(e) => {
+                e.preventDefault()
+                applyProduct(product)
+              }}
+              className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-accent"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{product.name}</span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {product.sku ? `${product.sku} · ` : ""}
+                  {product.hsnCode ? `HSN ${product.hsnCode} · ` : ""}
+                  {Number(product.gstRate)}% GST
+                </span>
+              </span>
+              <span className="shrink-0 text-xs font-medium">
+                {formatINR(Number(product.sellingPrice))}
+                {product.unit ? ` / ${product.unit}` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

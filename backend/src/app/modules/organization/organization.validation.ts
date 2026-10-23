@@ -13,6 +13,11 @@ const createOrgSchema = z.object({
       .regex(/^\d{2}$/, "State code must be two digits")
       .optional()
       .or(z.literal("")),
+    businessType: z
+      .string()
+      .max(60, "Business type must be at most 60 characters")
+      .optional()
+      .or(z.literal("")),
     invoicePrefix: z
       .string()
       .min(1, "Prefix must be at least 1 character")
@@ -32,6 +37,11 @@ const updateOrgSchema = z.object({
     stateCode: z
       .string()
       .regex(/^\d{2}$/, "State code must be two digits")
+      .optional()
+      .or(z.literal("")),
+    businessType: z
+      .string()
+      .max(60, "Business type must be at most 60 characters")
       .optional()
       .or(z.literal("")),
     invoicePrefix: z

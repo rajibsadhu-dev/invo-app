@@ -96,3 +96,21 @@
 - [ ] Add Vitest + Supertest; cover the money/GST/auth paths above
 - [ ] Structured logging (pino), readiness probe, graceful shutdown
 - [ ] Diff invoice line items on update instead of delete + recreate
+
+## Phase 8: Product Catalogue (ROADMAP Phase 2)
+- [x] Schema: `businessType` on Organization (free text, nullable)
+- [x] Schema: `ProductCategory` model (self-referencing tree, org-scoped)
+- [x] Schema: `Product` model (SKU, HSN, unit, prices, GST rate, isActive, hasVariants)
+- [x] Schema: `productId` on InvoiceItem (nullable FK, SetNull — traceability for catalogue lines)
+- [x] Migration + prisma generate
+- [x] Permissions: `product:create` / `product:edit` / `product:delete` / `product:view` in the role map
+- [x] Org: accept `businessType` in create/update org + registration payloads
+- [x] Category module — CRUD (`/organizations/:id/categories`), tree output, delete refused when products exist
+- [x] Product module — CRUD + `/products/search?q=` picker endpoint (name/SKU, max 10)
+- [x] Product delete — deactivate when referenced by invoice items, hard delete otherwise
+- [x] Invoice: accept `productId` per line item, validate it belongs to the org
+- [x] `tsc --noEmit` + `npm run build` clean (lint still blocked: no ESLint config)
+- [x] Fixed pre-existing P2002 handler bug — `meta.target` is the index *name* on MySQL,
+      not an array, so every unique-constraint violation returned 500 instead of 409
+- [x] Category names enforced unique per level in the service (MySQL lets NULL parents duplicate)
+- [x] End-to-end smoke test: 40 assertions over categories, products, picker, invoice link, permissions

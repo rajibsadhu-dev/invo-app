@@ -38,7 +38,7 @@ export default function CreateInvoicePage() {
       customerId: 0,
       invoiceDate: todayString(),
       items: [
-        { description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
+        { productId: null, description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
       ],
       discount: 0,
       receivedAmount: 0,
@@ -88,6 +88,7 @@ export default function CreateInvoicePage() {
       <InvoForm form={form} onSubmit={onSubmit}>
         <InvoiceFormFields
           form={form}
+          orgId={id}
           customers={customers}
           orgStateCode={org?.stateCode}
           isSubmitting={isLoading}
