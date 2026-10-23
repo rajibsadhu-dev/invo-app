@@ -6,6 +6,7 @@ export const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28] as const;
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
   productId: z.number().int().positive().optional().nullable(),
+  productVariantId: z.number().int().positive().optional().nullable(),
   hsnCode: z
     .string()
     .regex(/^\d{4,8}$/, "HSN/SAC must be 4 to 8 digits")

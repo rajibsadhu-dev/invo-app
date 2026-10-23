@@ -122,32 +122,59 @@ const resolvePlaceOfSupply = (
 };
 
 /**
- * A line may cite a catalogue product. Anything not in this organization's catalogue is
- * refused rather than stored: a foreign id would put another business's product on this
- * invoice, and the FK alone cannot tell the two apart.
+ * A line may cite a catalogue product and optionally a specific variant. Anything not in
+ * this organization's catalogue is refused rather than stored: a foreign id would put
+ * another business's product on this invoice, and the FK alone cannot tell the two apart.
+ * Variants must belong to their cited product.
  */
 const assertProductsInOrg = async (
   tx: Prisma.TransactionClient,
   organizationId: number,
   lines: GstLineInput[]
 ): Promise<void> => {
-  const ids = [
+  const productIds = [
     ...new Set(
       lines
         .map((line) => line.productId)
         .filter((id): id is number => typeof id === "number")
     ),
   ];
-  if (ids.length === 0) return;
+  if (productIds.length > 0) {
+    const found = await tx.product.count({
+      where: { id: { in: productIds }, organizationId },
+    });
+    if (found !== productIds.length) {
+      throw new ApiError(
+        httpStatus.NOT_FOUND,
+        "One or more products on this invoice were not found in this organization"
+      );
+    }
+  }
 
-  const found = await tx.product.count({
-    where: { id: { in: ids }, organizationId },
-  });
-  if (found !== ids.length) {
-    throw new ApiError(
-      httpStatus.NOT_FOUND,
-      "One or more products on this invoice were not found in this organization"
-    );
+  const variantLines = lines.filter(
+    (l): l is GstLineInput & { productVariantId: number } =>
+      typeof l.productVariantId === "number"
+  );
+  if (variantLines.length > 0) {
+    const variantIds = [...new Set(variantLines.map((l) => l.productVariantId))];
+    const variants = await tx.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: { id: true, productId: true },
+    });
+    const variantMap = new Map(variants.map((v) => [v.id, v.productId]));
+
+    for (const line of variantLines) {
+      const ownerProductId = variantMap.get(line.productVariantId);
+      if (ownerProductId === undefined) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Variant not found");
+      }
+      if (line.productId && ownerProductId !== line.productId) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Variant does not belong to the specified product"
+        );
+      }
+    }
   }
 };
 
@@ -155,6 +182,7 @@ const toLineInputs = (items: ICreateInvoice["items"]): GstLineInput[] =>
   items.map((item) => ({
     description: item.description,
     productId: item.productId ?? null,
+    productVariantId: item.productVariantId ?? null,
     hsnCode: item.hsnCode || null,
     unit: item.unit ?? null,
     quantity: item.quantity,

@@ -3,6 +3,8 @@ import validateRequest from "@/app/middlewares/validateRequest";
 import orgRole from "@/app/middlewares/orgRole";
 import { ProductValidation } from "./product.validation";
 import { ProductController } from "./product.controller";
+import { VariantValidation } from "./variant.validation";
+import { VariantController } from "./variant.controller";
 
 const router = Router({ mergeParams: true });
 
@@ -28,5 +30,46 @@ router.patch(
 );
 
 router.delete("/:productId", orgRole("product:delete"), ProductController.deleteProduct);
+
+// ─── Variant routes (nested under /:productId/variants) ─────────────────────
+
+router.get(
+  "/:productId/variants",
+  orgRole("product:view"),
+  VariantController.getVariants
+);
+
+router.post(
+  "/:productId/variants",
+  orgRole("product:create"),
+  validateRequest(VariantValidation.createVariantSchema),
+  VariantController.createVariant
+);
+
+router.post(
+  "/:productId/variants/generate",
+  orgRole("product:create"),
+  validateRequest(VariantValidation.bulkGenerateSchema),
+  VariantController.bulkGenerate
+);
+
+router.get(
+  "/:productId/variants/:variantId",
+  orgRole("product:view"),
+  VariantController.getVariantById
+);
+
+router.patch(
+  "/:productId/variants/:variantId",
+  orgRole("product:edit"),
+  validateRequest(VariantValidation.updateVariantSchema),
+  VariantController.updateVariant
+);
+
+router.delete(
+  "/:productId/variants/:variantId",
+  orgRole("product:delete"),
+  VariantController.deleteVariant
+);
 
 export const ProductRoutes = router;

@@ -132,6 +132,7 @@ export function InvoiceFormFields({
             onClick={() =>
               append({
                 productId: null,
+                productVariantId: null,
                 description: "",
                 hsnCode: "",
                 unit: getDefaultUnit(),

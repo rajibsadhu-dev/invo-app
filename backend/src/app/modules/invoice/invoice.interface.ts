@@ -7,6 +7,8 @@ export type IInvoiceItem = {
    * supported, and the descriptive fields are copied onto the line either way.
    */
   productId?: number | null;
+  /** Specific variant of the product, if any. */
+  productVariantId?: number | null;
   hsnCode?: string | null;
   unit?: string | null;
   quantity: number;

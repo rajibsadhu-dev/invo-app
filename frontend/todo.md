@@ -100,3 +100,17 @@
 - [x] `npm run typecheck` switched from `tsc --noEmit` (a no-op under project references)
       to `tsc -b`, which is what surfaced those errors
 - [ ] Not verified in a browser yet — API paths are covered by the backend smoke test
+
+## Phase 10: Product Variants (ROADMAP Phase 3)
+- [x] Variant attribute API endpoints (RTK Query)
+- [x] Variant attribute management page at `/org/:orgId/products/attributes` (add/edit/delete, tag-based values)
+- [x] "Attributes" button on Products page linking to attribute management
+- [x] Product variant API endpoints (RTK Query) — CRUD + bulk generate
+- [x] Variant section on product detail page (table, generate dialog, add/edit dialogs)
+- [x] Generate dialog: pick attributes + values → cartesian combos preview → bulk create
+- [x] Invoice form: variant picker dropdown after selecting a product with variants
+- [x] Variant price override applied to line item rate
+- [x] `productVariantId` tracked on invoice line items (create + edit)
+- [x] Route for variant attributes page added to router
+- [x] `tsc -b`, `npm run lint` (0 errors) and `npm run build` clean
+- [ ] Not verified in a browser yet

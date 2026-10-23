@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Package,
   FolderTree,
+  SlidersHorizontal,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -116,6 +117,13 @@ export default function ProductsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/org/${id}/products/attributes`)}
+          >
+            <SlidersHorizontal /> Attributes
+          </Button>
           <Button
             variant="outline"
             size="sm"

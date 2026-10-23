@@ -226,88 +226,50 @@ Each phase is independently shippable.
 
 ---
 
-## Phase 3 — Product Variants
+## Phase 3 — Product Variants ✅
 
 > Goal: Products like "T-Shirt" have variants (Red-M, Blue-L) each with own
 > SKU, price, and stock count.
+> **Complete: 2026-10-23** — backend, schema and frontend.
 
 ### 3.1 Variant Attributes
-- [ ] **Schema:**
-  ```
-  model VariantAttribute {
-    id             Int       @id @default(autoincrement())
-    organizationId Int       @map("organization_id")
-    name           String    // "Size", "Color", "Material"
-    values         Json      // ["S", "M", "L", "XL"] or ["Red", "Blue", "Green"]
-    createdAt      DateTime  @default(now())
-
-    organization   Organization @relation(fields: [organizationId], references: [id])
-
-    @@unique([organizationId, name])
-  }
-  ```
-- [ ] **Backend:** Attribute management
+- [x] **Schema:** `VariantAttribute` model (org-scoped, name + JSON values, unique on org+name)
+- [x] **Backend:** Attribute management
   - `GET /organizations/:orgId/variant-attributes` — list all defined attributes
   - `POST /organizations/:orgId/variant-attributes` — create (name + initial values)
   - `PATCH /organizations/:orgId/variant-attributes/:id` — add/remove values
   - `DELETE /organizations/:orgId/variant-attributes/:id` — refuse if used by any variant
-- [ ] **Frontend:** Attribute management (part of product settings or inline on product form)
-  - "Manage Attributes" section: add attribute name, add values as tags/chips
+- [x] **Frontend:** Attribute management page at `/org/:orgId/products/attributes`
+  - Add/edit/delete attributes with tag-based value entry
 
 ### 3.2 Product Variants
-- [ ] **Schema:**
-  ```
-  model ProductVariant {
-    id             Int       @id @default(autoincrement())
-    productId      Int       @map("product_id")
-    sku            String?   @db.VarChar(50)
-    name           String    // auto-generated: "Red / M" or editable
-    attributes     Json      // { "Color": "Red", "Size": "M" }
-    sellingPrice   Decimal?  @map("selling_price") @db.Decimal(12, 2)  // null = use product price
-    purchasePrice  Decimal?  @map("purchase_price") @db.Decimal(12, 2)
-    stockQuantity  Decimal   @default(0) @map("stock_quantity") @db.Decimal(10, 3)
-    lowStockAlert  Decimal?  @map("low_stock_alert") @db.Decimal(10, 3)
-    isActive       Boolean   @default(true) @map("is_active")
-    createdAt      DateTime  @default(now())
-    updatedAt      DateTime  @updatedAt
-
-    product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-    stockMovements StockMovement[]
-
-    @@unique([productId, sku])
-    @@index([productId])
-  }
-  ```
-- [ ] **Backend:** Variant CRUD (nested under product)
+- [x] **Schema:** `ProductVariant` model (per-product: SKU, name, attributes JSON, price override, stock, active)
+- [x] **Backend:** Variant CRUD (nested under product)
   - `GET /products/:productId/variants` — list variants for a product
-  - `POST /products/:productId/variants` — create variant (auto-generate from attribute combos or manual)
+  - `POST /products/:productId/variants` — create variant
+  - `POST /products/:productId/variants/generate` — bulk generate from attribute combos
   - `PATCH /products/:productId/variants/:variantId` — update price, SKU, stock alert
-  - `DELETE /products/:productId/variants/:variantId` — refuse if used in invoices
-  - Bulk generate: given selected attributes + values, generate all combinations
-    - e.g., Color [Red, Blue] × Size [S, M, L] → 6 variants
-- [ ] **Frontend:** Variant management on product form/detail
-  - When "has variants" is on:
-    - Select which attributes apply to this product
-    - Select values for each attribute
-    - "Generate Variants" button → creates all combinations
-    - Variants table: SKU, name (attributes), price (override or inherit), stock, active toggle
-    - Inline edit price and SKU per variant
-  - When "has variants" is off:
-    - Single stock quantity field on the product itself
+  - `DELETE /products/:productId/variants/:variantId` — deactivate if used in invoices, hard delete otherwise
+  - Bulk generate: given selected attributes + values, generate all combinations (max 200)
+- [x] **Frontend:** Variant management on product detail page
+  - VariantSection component with variants table, generate dialog, add/edit dialogs
+  - Generate dialog: pick attributes + values → preview combos → bulk create
+  - Variants table: name, SKU, price (override or inherit), stock, active badge
 
 ### 3.3 Invoice Form — Variant Picker
-- [ ] **Frontend:** When a product with variants is selected in the invoice line item:
-  - Show a second dropdown: "Select Variant" with the variant options
+- [x] **Frontend:** When a product with variants is selected in the invoice line item:
+  - Variant dropdown appears below the product search
   - Selecting a variant fills in the variant-specific price (if overridden)
   - Stores `productVariantId` on the line item
-- [ ] **Backend:** Validate `productVariantId` belongs to the given `productId`
+  - "Skip — use base product" option available
+- [x] **Backend:** Validate `productVariantId` belongs to the given `productId`
 
 ### 3.4 Deliverables Checklist
-- [ ] Define org-level variant attributes (Size, Color, etc.) with values
-- [ ] Create variants under a product (manual or bulk-generated from attribute combos)
-- [ ] Each variant has its own SKU, optional price override, stock count
-- [ ] Invoice form shows variant picker for products with variants
-- [ ] Variant stock is tracked independently
+- [x] Define org-level variant attributes (Size, Color, etc.) with values
+- [x] Create variants under a product (manual or bulk-generated from attribute combos)
+- [x] Each variant has its own SKU, optional price override, stock count
+- [x] Invoice form shows variant picker for products with variants
+- [x] Variant stock is tracked independently
 
 ---
 

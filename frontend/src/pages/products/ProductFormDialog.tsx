@@ -161,7 +161,7 @@ export function ProductFormDialog({
             control={form.control}
             name="hasVariants"
             label="This product has variants"
-            description="Variant sizes and colours arrive in a later release"
+            description="Enable to manage sizes, colours and other variants"
           />
           <DialogFooter className="mt-1">
             <Button type="submit" disabled={isCreating || isUpdating}>

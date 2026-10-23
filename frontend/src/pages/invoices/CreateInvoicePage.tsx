@@ -38,7 +38,7 @@ export default function CreateInvoicePage() {
       customerId: 0,
       invoiceDate: todayString(),
       items: [
-        { productId: null, description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
+        { productId: null, productVariantId: null, description: "", hsnCode: "", unit: "", quantity: 1, rate: 0, gstRate: 18 },
       ],
       discount: 0,
       receivedAmount: 0,

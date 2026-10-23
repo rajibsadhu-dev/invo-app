@@ -7,6 +7,8 @@ export const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28] as const
 export const lineItemSchema = z.object({
   /** Set when the line was picked from the catalogue; null once typed by hand. */
   productId: z.number().int().positive().nullable().optional(),
+  /** Set when the line is a specific variant of the product. */
+  productVariantId: z.number().int().positive().nullable().optional(),
   description: z.string().min(1, "Required"),
   hsnCode: z
     .string()

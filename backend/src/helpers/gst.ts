@@ -17,6 +17,8 @@ export type GstLineInput = {
   description: string;
   /** Catalogue product this line came from, if any. Carried through untouched. */
   productId?: number | null;
+  /** Specific variant of the product, if any. */
+  productVariantId?: number | null;
   hsnCode?: string | null;
   unit?: string | null;
   quantity: Numeric;
@@ -27,6 +29,7 @@ export type GstLineInput = {
 export type GstLine = {
   description: string;
   productId: number | null;
+  productVariantId: number | null;
   hsnCode: string | null;
   unit: string | null;
   quantity: Prisma.Decimal;
@@ -110,6 +113,7 @@ export function computeInvoiceTotals(
     return {
       description: item.description,
       productId: item.productId ?? null,
+      productVariantId: item.productVariantId ?? null,
       hsnCode: item.hsnCode ?? null,
       unit: item.unit ?? null,
       quantity: dec(item.quantity).toDecimalPlaces(3, D.ROUND_HALF_UP),

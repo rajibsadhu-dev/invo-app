@@ -18,6 +18,7 @@ import CustomerDetailPage from "@/pages/customers/CustomerDetailPage"
 import ProductsPage from "@/pages/products/ProductsPage"
 import ProductDetailPage from "@/pages/products/ProductDetailPage"
 import CategoriesPage from "@/pages/products/CategoriesPage"
+import VariantAttributesPage from "@/pages/products/VariantAttributesPage"
 import InvoicesPage from "@/pages/invoices/InvoicesPage"
 import CreateInvoicePage from "@/pages/invoices/CreateInvoicePage"
 import EditInvoicePage from "@/pages/invoices/EditInvoicePage"
@@ -74,8 +75,9 @@ const router = createBrowserRouter([
       { path: "org/:orgId/customers", element: <CustomersPage /> },
       { path: "org/:orgId/customers/:customerId", element: <CustomerDetailPage /> },
       { path: "org/:orgId/products", element: <ProductsPage /> },
-      // Before /products/:productId, so "categories" is not read as an id.
+      // Before /products/:productId, so "categories"/"attributes" are not read as ids.
       { path: "org/:orgId/products/categories", element: <CategoriesPage /> },
+      { path: "org/:orgId/products/attributes", element: <VariantAttributesPage /> },
       { path: "org/:orgId/products/:productId", element: <ProductDetailPage /> },
       { path: "org/:orgId/invoices", element: <InvoicesPage /> },
       { path: "org/:orgId/invoices/new", element: <CreateInvoicePage /> },

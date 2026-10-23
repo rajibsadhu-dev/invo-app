@@ -14,6 +14,7 @@ import { CustomerRoutes } from "@/app/modules/customer/customer.route";
 import { InvoiceRoutes } from "@/app/modules/invoice/invoice.route";
 import { CategoryRoutes } from "@/app/modules/category/category.route";
 import { ProductRoutes } from "@/app/modules/product/product.route";
+import { VariantAttributeRoutes } from "@/app/modules/variant-attribute/variantAttribute.route";
 
 const router = Router();
 
@@ -81,6 +82,7 @@ router.use("/:id/invoices", InvoiceRoutes);
 // Catalogue routes — guarded by the product permissions inside the sub-routers
 router.use("/:id/categories", CategoryRoutes);
 router.use("/:id/products", ProductRoutes);
+router.use("/:id/variant-attributes", VariantAttributeRoutes);
 
 // Logo upload — owner or admin
 router.post(

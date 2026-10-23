@@ -216,6 +216,8 @@ export type InvoiceItem = {
   invoiceId: number
   /** Set when the line came from the catalogue; null for a hand-typed line. */
   productId?: number | null
+  /** Set when the line came from a specific variant. */
+  productVariantId?: number | null
   description: string
   hsnCode?: string | null
   unit?: string | null
@@ -277,6 +279,7 @@ export type Invoice = {
 
 export type InvoiceItemPayload = {
   productId?: number | null
+  productVariantId?: number | null
   description: string
   hsnCode?: string | null
   unit?: string | null
@@ -361,7 +364,8 @@ export type Product = {
   createdAt: string
   updatedAt: string
   category?: { id: number; name: string } | null
-  _count?: { invoiceItems: number }
+  variants?: ProductVariant[]
+  _count?: { invoiceItems: number; variants?: number }
 }
 
 /** Trimmed shape returned by the invoice-form picker endpoint. */
@@ -374,6 +378,80 @@ export type ProductPickerHit = {
   sellingPrice: string
   gstRate: string
   hasVariants: boolean
+  variants?: ProductVariantPickerHit[]
+}
+
+// ─── Variant Attributes ──────────────────────────────────────────────────────
+
+export type VariantAttribute = {
+  id: number
+  organizationId: number
+  name: string
+  values: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export type CreateVariantAttributePayload = {
+  name: string
+  values: string[]
+}
+
+export type UpdateVariantAttributePayload = {
+  name?: string
+  values?: string[]
+}
+
+// ─── Product Variants ────────────────────────────────────────────────────────
+
+export type ProductVariant = {
+  id: number
+  productId: number
+  sku?: string | null
+  name: string
+  attributes: Record<string, string>
+  sellingPrice?: string | null
+  purchasePrice?: string | null
+  stockQuantity: string
+  lowStockAlert?: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  _count?: { invoiceItems: number }
+}
+
+export type ProductVariantPickerHit = {
+  id: number
+  name: string
+  sku?: string | null
+  sellingPrice?: string | null
+  attributes: Record<string, string>
+}
+
+export type CreateVariantPayload = {
+  sku?: string | null
+  name: string
+  attributes: Record<string, string>
+  sellingPrice?: number | null
+  purchasePrice?: number | null
+  isActive?: boolean
+}
+
+export type UpdateVariantPayload = {
+  sku?: string | null
+  name?: string
+  sellingPrice?: number | null
+  purchasePrice?: number | null
+  isActive?: boolean
+}
+
+export type BulkGenerateVariantsPayload = {
+  attributes: Record<string, string[]>
+}
+
+export type BulkGenerateResult = {
+  created: number
+  skipped: number
 }
 
 export type CreateProductPayload = {

@@ -9,6 +9,7 @@ import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { formatINR } from "@/lib/money"
 import { ProductFormDialog } from "./ProductFormDialog"
+import { VariantSection } from "./VariantSection"
 
 function Field({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
@@ -119,6 +120,8 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      <VariantSection orgId={id} product={product} />
 
       {usageCount > 0 && (
         <p className="text-xs text-muted-foreground">

@@ -114,3 +114,16 @@
       not an array, so every unique-constraint violation returned 500 instead of 409
 - [x] Category names enforced unique per level in the service (MySQL lets NULL parents duplicate)
 - [x] End-to-end smoke test: 40 assertions over categories, products, picker, invoice link, permissions
+
+## Phase 9: Product Variants (ROADMAP Phase 3)
+- [x] Schema: `VariantAttribute` model (org-scoped, name + JSON values)
+- [x] Schema: `ProductVariant` model (per-product: SKU, name, attributes JSON, price override, stock, active)
+- [x] Schema: `productVariantId` on InvoiceItem (nullable FK, SetNull)
+- [x] Migration `20261023000100_product_variants` + prisma generate
+- [x] Variant attribute module — CRUD (`/organizations/:id/variant-attributes`)
+- [x] Variant routes nested under product (`/products/:id/variants`)
+- [x] Bulk generate variants from attribute combinations (`POST /variants/generate`)
+- [x] Variant delete — deactivate when used on invoices, hard delete otherwise
+- [x] Invoice: accept `productVariantId` per line item, validate variant belongs to product+org
+- [x] Product detail includes variants; product picker returns active variants for variant-enabled products
+- [x] `tsc --noEmit` clean

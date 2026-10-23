@@ -147,6 +147,8 @@ const getProducts = async (organizationId: number, query: IProductQuery) => {
 /**
  * Lightweight lookup for the invoice form's product picker: active products only,
  * matched on name or SKU, capped at ten rows and trimmed to the fields the form fills in.
+ * Products with variants include their active variants so the form can show a variant
+ * picker without a second round-trip.
  */
 const searchProducts = async (organizationId: number, term?: string) => {
   const search = term?.trim();
@@ -159,7 +161,20 @@ const searchProducts = async (organizationId: number, term?: string) => {
         ? { OR: [{ name: { contains: search } }, { sku: { contains: search } }] }
         : {}),
     },
-    select: PICKER_SELECT,
+    select: {
+      ...PICKER_SELECT,
+      variants: {
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          sellingPrice: true,
+          attributes: true,
+        },
+        orderBy: { name: "asc" },
+      },
+    },
     orderBy: { name: "asc" },
     take: PICKER_RESULT_LIMIT,
   });
@@ -170,7 +185,8 @@ const getProductById = async (organizationId: number, productId: number) => {
     where: { id: productId, organizationId },
     include: {
       category: { select: { id: true, name: true } },
-      _count: { select: { invoiceItems: true } },
+      variants: { orderBy: { name: "asc" } },
+      _count: { select: { invoiceItems: true, variants: true } },
     },
   });
   if (!product) {
