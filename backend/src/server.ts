@@ -3,6 +3,7 @@ import app from "@/app";
 import config from "@/config";
 import seedSuperAdmin from "@/app/seedSuperAdmin";
 import { AuthService } from "@/app/modules/auth/auth.service";
+import { closeBrowser } from "@/helpers/pdfGenerator";
 
 const REFRESH_TOKEN_SWEEP_INTERVAL = 24 * 60 * 60 * 1000;
 
@@ -77,3 +78,13 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+const shutdown = async () => {
+  console.log("\n🛑 Shutting down…");
+  await closeBrowser();
+  await prisma.$disconnect();
+  process.exit(0);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

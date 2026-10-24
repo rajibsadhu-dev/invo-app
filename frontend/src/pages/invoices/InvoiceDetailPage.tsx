@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Pencil, Trash2, Loader2, Printer } from "lucide-react"
+import { Pencil, Trash2, Loader2, Printer, Send } from "lucide-react"
 import { toast } from "sonner"
 import { useReactToPrint } from "react-to-print"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { StatusBadge } from "./InvoicesPage"
 import QRCode from "qrcode"
 import PrintableInvoice from "./PrintableInvoice"
+import { SendInvoiceDialog } from "./SendInvoiceDialog"
 import { formatINR } from "@/lib/money"
 import type { InvoiceStatus } from "@/types"
 import { getApiErrorMessage } from "@/lib/apiError"
@@ -60,6 +61,7 @@ export default function InvoiceDetailPage() {
 
   const printRef = useRef<HTMLDivElement>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [sendOpen, setSendOpen] = useState(false)
 
   const { data: orgData } = useGetOrganizationByIdQuery(oId)
   const org = orgData?.data
@@ -182,6 +184,14 @@ export default function InvoiceDetailPage() {
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => handlePrint()}>
             <Printer className="h-3.5 w-3.5" /> Print / PDF
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setSendOpen(true)}
+            disabled={invoice.status === "paid" || invoice.status === "cancelled"}
+          >
+            <Send className="h-3.5 w-3.5" /> Send
           </Button>
           {/* Figures are frozen once the invoice leaves draft — the server refuses the
               edit, so do not offer it. */}
@@ -415,6 +425,16 @@ export default function InvoiceDetailPage() {
         <div style={{ position: "absolute", left: "-9999px", top: 0, zIndex: -1 }}>
           <PrintableInvoice ref={printRef} invoice={invoice} org={org} logoUrl={logoUrl} qrDataUrl={qrDataUrl} />
         </div>
+      )}
+
+      {org && (
+        <SendInvoiceDialog
+          open={sendOpen}
+          onOpenChange={setSendOpen}
+          orgId={oId}
+          invoice={invoice}
+          org={org}
+        />
       )}
     </div>
   )

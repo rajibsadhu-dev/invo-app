@@ -1,11 +1,19 @@
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import httpStatus from "http-status";
 import { Prisma, InvoiceStatus, OrgRole, Customer, Organization } from "@prisma/client";
+import QRCode from "qrcode";
 import prisma from "@/lib/prisma";
+import config from "@/config";
 import ApiError from "@/app/errors/ApiError";
 import { amountInWords } from "@/helpers/amountInWords";
 import { computeInvoiceTotals, dec, money, GstLineInput } from "@/helpers/gst";
 import { buildQuery, paginationMeta } from "@/helpers/queryBuilder";
+import { buildInvoiceHtml } from "@/helpers/invoicePdfTemplate";
+import { generateInvoicePdf } from "@/helpers/pdfGenerator";
+import { sendMailWithAttachment } from "@/helpers/mailer";
+import { logEmail } from "@/helpers/emailLogger";
 import { ICreateInvoice, IUpdateInvoice, IInvoiceQuery } from "./invoice.interface";
 import { InventoryService } from "@/app/modules/inventory/inventory.service";
 
@@ -611,6 +619,126 @@ const getInvoiceByVerificationToken = async (token: string) => {
   return addBalanceDue(invoice);
 };
 
+const getInvoiceForSend = async (
+  organizationId: number,
+  invoiceId: number,
+  orgRole?: OrgRole,
+  userId?: number
+) => {
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: invoiceId,
+      organizationId,
+      deletedAt: null,
+      ...(orgRole === "staff" && userId ? { createdById: userId } : {}),
+    },
+    include: {
+      items: true,
+      customer: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          phone: true,
+          email: true,
+          logo: true,
+          registerNumber: true,
+          gstNumber: true,
+          stateCode: true,
+          businessType: true,
+        },
+      },
+    },
+  });
+  if (!invoice) throw new ApiError(httpStatus.NOT_FOUND, "Invoice not found");
+  return addBalanceDue(invoice);
+};
+
+const sendInvoice = async (
+  organizationId: number,
+  invoiceId: number,
+  payload: { to: string; subject: string; message: string },
+  userId: number,
+  orgRole?: OrgRole
+) => {
+  const invoice = await getInvoiceForSend(organizationId, invoiceId, orgRole, userId);
+  const org = invoice.organization;
+
+  // Read logo from disk as base64 data URL
+  let logoBase64: string | null = null;
+  if (org.logo) {
+    try {
+      const logoPath = path.join(process.cwd(), org.logo);
+      const logoBuffer = fs.readFileSync(logoPath);
+      const ext = path.extname(org.logo).toLowerCase().replace(".", "");
+      const mime = ext === "svg" ? "image/svg+xml" : `image/${ext === "jpg" ? "jpeg" : ext}`;
+      logoBase64 = `data:${mime};base64,${logoBuffer.toString("base64")}`;
+    } catch {
+      // Logo file missing — proceed without it
+    }
+  }
+
+  // Generate QR data URL if verification token exists
+  let qrDataUrl: string | null = null;
+  if (invoice.verificationToken) {
+    const origin = config.cors_origins?.[0] || `http://localhost:${config.port}`;
+    const verifyUrl = `${origin}/verify/${invoice.verificationToken}`;
+    qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+      width: 200,
+      margin: 1,
+      errorCorrectionLevel: "M",
+    });
+  }
+
+  // Build HTML and generate PDF
+  const html = buildInvoiceHtml({ invoice, org, logoBase64, qrDataUrl });
+  const pdfBuffer = await generateInvoicePdf(html);
+
+  // Attempt SMTP send (non-fatal on failure)
+  let smtpSent = false;
+  try {
+    smtpSent = await sendMailWithAttachment({
+      to: payload.to,
+      subject: payload.subject,
+      html: `<div style="font-family:sans-serif;">${payload.message.replace(/\n/g, "<br>")}</div>`,
+      attachments: [
+        {
+          filename: `${invoice.invoiceNumber}.pdf`,
+          content: pdfBuffer,
+          contentType: "application/pdf",
+        },
+      ],
+    });
+  } catch {
+    // SMTP failure is non-fatal — email is logged regardless
+  }
+
+  // Always log to email-log.txt
+  logEmail({
+    orgName: org.name,
+    to: payload.to,
+    subject: payload.subject,
+    body: payload.message,
+    attachmentName: `${invoice.invoiceNumber}.pdf`,
+    attachmentSizeKb: Math.round(pdfBuffer.length / 1024),
+    smtpSent,
+  });
+
+  // Auto-transition draft → sent
+  if (invoice.status === "draft") {
+    return InvoiceService.updateInvoice(
+      organizationId,
+      invoiceId,
+      { status: "sent" as InvoiceStatus },
+      orgRole,
+      userId
+    );
+  }
+
+  return addBalanceDue(invoice);
+};
+
 export const InvoiceService = {
   createInvoice,
   getInvoices,
@@ -618,4 +746,5 @@ export const InvoiceService = {
   updateInvoice,
   deleteInvoice,
   getInvoiceByVerificationToken,
+  sendInvoice,
 };

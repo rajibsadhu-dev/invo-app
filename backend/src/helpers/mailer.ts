@@ -29,6 +29,14 @@ export type MailOptions = {
   html: string;
 };
 
+export type MailWithAttachmentOptions = MailOptions & {
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType: string;
+  }>;
+};
+
 export const sendMail = async (options: MailOptions): Promise<boolean> => {
   const transport = getTransporter();
   if (!transport) {
@@ -41,6 +49,26 @@ export const sendMail = async (options: MailOptions): Promise<boolean> => {
     to: options.to,
     subject: options.subject,
     html: options.html,
+  });
+
+  return true;
+};
+
+export const sendMailWithAttachment = async (
+  options: MailWithAttachmentOptions
+): Promise<boolean> => {
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn("⚠️  SMTP not configured — email not sent:", options.subject);
+    return false;
+  }
+
+  await transport.sendMail({
+    from: config.smtp.from,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+    attachments: options.attachments,
   });
 
   return true;

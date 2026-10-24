@@ -23,6 +23,7 @@ files/
 # Logs
 *.log
 npm-debug.log*
+email-log.txt
 
 # OS / editor
 .DS_Store

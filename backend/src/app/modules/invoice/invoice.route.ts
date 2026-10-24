@@ -28,4 +28,12 @@ router.patch(
 
 router.delete("/:invoiceId", orgRole("invoice:delete"), InvoiceController.deleteInvoice);
 
+router.post(
+  "/:invoiceId/send",
+  orgRole("invoice:edit"),
+  emailVerified,
+  validateRequest(InvoiceValidation.sendInvoiceSchema),
+  InvoiceController.sendInvoice
+);
+
 export const InvoiceRoutes = router;

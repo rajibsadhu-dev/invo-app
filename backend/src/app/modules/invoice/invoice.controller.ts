@@ -84,10 +84,30 @@ const deleteInvoice = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const sendInvoice = catchAsync(async (req: Request, res: Response) => {
+  const organizationId = Number(req.params.id);
+  const invoiceId = Number(req.params.invoiceId);
+  const result = await InvoiceService.sendInvoice(
+    organizationId,
+    invoiceId,
+    req.body,
+    req.user!.id,
+    req.orgMember?.role
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Invoice sent successfully",
+    data: result,
+  });
+});
+
 export const InvoiceController = {
   createInvoice,
   getInvoices,
   getInvoiceById,
   updateInvoice,
   deleteInvoice,
+  sendInvoice,
 };

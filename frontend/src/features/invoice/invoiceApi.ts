@@ -93,6 +93,21 @@ export const invoiceApi = baseApi.injectEndpoints({
     verifyInvoice: builder.query<ApiResponse<Invoice & { organization: Organization }>, string>({
       query: (token) => `/verify/${token}`,
     }),
+
+    sendInvoice: builder.mutation<
+      ApiResponse<Invoice>,
+      { orgId: number; invoiceId: number; body: { to: string; subject: string; message: string } }
+    >({
+      query: ({ orgId, invoiceId, body }) => ({
+        url: `/organizations/${orgId}/invoices/${invoiceId}/send`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { orgId, invoiceId }) => [
+        { type: "Invoice", id: orgId },
+        { type: "Invoice", id: invoiceId },
+      ],
+    }),
   }),
 })
 
@@ -103,4 +118,5 @@ export const {
   useUpdateInvoiceMutation,
   useDeleteInvoiceMutation,
   useVerifyInvoiceQuery,
+  useSendInvoiceMutation,
 } = invoiceApi

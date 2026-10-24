@@ -63,4 +63,16 @@ const updateInvoiceSchema = z.object({
   }),
 });
 
-export const InvoiceValidation = { createInvoiceSchema, updateInvoiceSchema };
+const sendInvoiceSchema = z.object({
+  body: z.object({
+    to: z.string().email("Valid email address is required"),
+    subject: z.string().min(1, "Subject is required").max(500),
+    message: z.string().min(1, "Message is required").max(5000),
+  }),
+});
+
+export const InvoiceValidation = {
+  createInvoiceSchema,
+  updateInvoiceSchema,
+  sendInvoiceSchema,
+};
