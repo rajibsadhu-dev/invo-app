@@ -101,6 +101,8 @@ export type Organization = {
   invoicePrefix: string
   nextInvoiceNumber: number
   deductStockOn: "sent" | "created"
+  estimatePrefix: string
+  nextEstimateNumber: number
   createdAt: string
   updatedAt: string
 }
@@ -119,6 +121,8 @@ export type CreateOrgPayload = {
 
 export type UpdateOrgPayload = Partial<CreateOrgPayload> & {
   nextInvoiceNumber?: number
+  estimatePrefix?: string
+  nextEstimateNumber?: number
 }
 
 export type OrganizationWithOwner = Organization & {
@@ -703,4 +707,97 @@ export type StatusBreakdown = {
   status: string
   count: number
   totalAmount: string
+}
+
+// ─── Estimate ───────────────────────────────────────────────────────────────
+
+export type EstimateStatus =
+  | "draft"
+  | "sent"
+  | "accepted"
+  | "rejected"
+  | "expired"
+  | "converted"
+  | "cancelled"
+
+export type EstimateItem = {
+  id: number
+  estimateId: number
+  productId?: number | null
+  productVariantId?: number | null
+  description: string
+  hsnCode?: string | null
+  unit?: string | null
+  quantity: string
+  rate: string
+  amount: string
+  discount: string
+  taxableValue: string
+  gstRate: string
+  cgst: string
+  sgst: string
+  igst: string
+}
+
+export type Estimate = {
+  id: number
+  organizationId: number
+  customerId: number
+  estimateNumber: string
+  estimateDate: string
+  validUntil?: string | null
+  status: EstimateStatus
+  subtotal: string
+  tax: string
+  discount: string
+  taxableValue: string
+  cgstTotal: string
+  sgstTotal: string
+  igstTotal: string
+  roundOff: string
+  placeOfSupply?: string | null
+  isIntraState: boolean
+  grandTotal: string
+  amountInWords?: string | null
+  challanNo?: string | null
+  vehicleNo?: string | null
+  siteLocation?: string | null
+  billingAddress?: string | null
+  referenceNumber?: string | null
+  termsAndConditions?: string | null
+  notes?: string | null
+  authorizedSignatory?: string | null
+  convertedToInvoiceId?: number | null
+  createdAt: string
+  updatedAt: string
+  customer?: {
+    id: number
+    name: string
+    email?: string | null
+    phone?: string | null
+    address?: string | null
+    gstNumber?: string | null
+    stateCode?: string | null
+  }
+  items?: EstimateItem[]
+}
+
+export type CreateEstimatePayload = {
+  customerId: number
+  estimateDate?: string
+  validUntil?: string | null
+  items: InvoiceItemPayload[]
+  discount?: number
+  challanNo?: string | null
+  vehicleNo?: string | null
+  siteLocation?: string | null
+  billingAddress?: string | null
+  referenceNumber?: string | null
+  termsAndConditions?: string | null
+  notes?: string | null
+  authorizedSignatory?: string | null
+}
+
+export type UpdateEstimatePayload = Partial<CreateEstimatePayload> & {
+  status?: EstimateStatus
 }

@@ -50,6 +50,12 @@ const updateOrgSchema = z.object({
       .max(10, "Prefix must be at most 10 characters")
       .optional(),
     nextInvoiceNumber: z.number().int().positive().optional(),
+    estimatePrefix: z
+      .string()
+      .min(1)
+      .max(10, "Prefix must be at most 10 characters")
+      .optional(),
+    nextEstimateNumber: z.number().int().positive().optional(),
   }),
 });
 

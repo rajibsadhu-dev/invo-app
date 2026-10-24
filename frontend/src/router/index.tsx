@@ -36,6 +36,10 @@ import EditPOPage from "@/pages/purchase-orders/EditPOPage"
 import PODetailPage from "@/pages/purchase-orders/PODetailPage"
 import OrgDashboardPage from "@/pages/analytics/OrgDashboardPage"
 import GstSummaryPage from "@/pages/analytics/GstSummaryPage"
+import EstimatesPage from "@/pages/estimates/EstimatesPage"
+import CreateEstimatePage from "@/pages/estimates/CreateEstimatePage"
+import EditEstimatePage from "@/pages/estimates/EditEstimatePage"
+import EstimateDetailPage from "@/pages/estimates/EstimateDetailPage"
 import VerifyInvoicePage from "@/pages/verify/VerifyInvoicePage"
 
 const router = createBrowserRouter([
@@ -106,6 +110,10 @@ const router = createBrowserRouter([
       { path: "org/:orgId/purchase-orders/new", element: <CreatePOPage /> },
       { path: "org/:orgId/purchase-orders/:poId", element: <PODetailPage /> },
       { path: "org/:orgId/purchase-orders/:poId/edit", element: <EditPOPage /> },
+      { path: "org/:orgId/estimates", element: <EstimatesPage /> },
+      { path: "org/:orgId/estimates/new", element: <CreateEstimatePage /> },
+      { path: "org/:orgId/estimates/:estimateId", element: <EstimateDetailPage /> },
+      { path: "org/:orgId/estimates/:estimateId/edit", element: <EditEstimatePage /> },
       { path: "org/:orgId/invoices", element: <InvoicesPage /> },
       { path: "org/:orgId/invoices/new", element: <CreateInvoicePage /> },
       { path: "org/:orgId/invoices/:invoiceId", element: <InvoiceDetailPage /> },

@@ -6,6 +6,8 @@ interface PrintableInvoiceProps {
   org: Organization
   logoUrl: string | null
   qrDataUrl?: string | null
+  documentTitle?: string
+  showPayment?: boolean
 }
 
 /* ─── Exact CSS from the HTML template ───────────────────────────────────────
@@ -210,7 +212,7 @@ function items0HasGst(invoice: PrintableInvoiceProps["invoice"]): boolean {
 }
 
 const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
-  ({ invoice, org, logoUrl, qrDataUrl }, ref) => {
+  ({ invoice, org, logoUrl, qrDataUrl, documentTitle = "Invoice", showPayment = true }, ref) => {
     const subtotal = Number(invoice.subtotal)
     const tax = Number(invoice.tax)
     const discount = Number(invoice.discount)
@@ -243,7 +245,7 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
       <div ref={ref} style={s.wrap}>
 
         {/* ── Invoice Title ── */}
-        <div style={s.invoiceTitle}>Invoice</div>
+        <div style={s.invoiceTitle}>{documentTitle}</div>
 
         {/* ── Main table ── */}
         <table style={s.mainTable}>
@@ -297,7 +299,7 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
                     {/* Invoice No. + Date */}
                     <tr>
                       <td style={s.metaTd}>
-                        <div style={s.metaLabel}>Invoice No.</div>
+                        <div style={s.metaLabel}>{documentTitle} No.</div>
                         <div style={s.metaValue}>{invoice.invoiceNumber}</div>
                       </td>
                       <td style={s.metaTd}>
@@ -389,7 +391,7 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
             {/* ROW 3: Words | Amounts breakdown */}
             <tr>
               <td style={s.wordsCell}>
-                <div style={s.wordsLabel}>Invoice Amount In Words</div>
+                <div style={s.wordsLabel}>{documentTitle} Amount In Words</div>
                 <div style={s.wordsValue}>{invoice.amountInWords ?? ""}</div>
               </td>
 
@@ -451,21 +453,25 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
                       <td style={s.amountsTd}><strong>Total</strong></td>
                       <td style={s.amtValue}><strong>&#8377; {grandTotal.toFixed(2)}</strong></td>
                     </tr>
-                    <tr>
-                      <td style={s.amountsTd}>Received</td>
-                      <td style={s.amtValue}>&#8377; {received.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                      <td style={s.amountsTd}>Balance</td>
-                      <td style={s.amtValue}>&#8377; {balance.toFixed(2)}</td>
-                    </tr>
+                    {showPayment && (
+                      <>
+                        <tr>
+                          <td style={s.amountsTd}>Received</td>
+                          <td style={s.amtValue}>&#8377; {received.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td style={s.amountsTd}>Balance</td>
+                          <td style={s.amtValue}>&#8377; {balance.toFixed(2)}</td>
+                        </tr>
+                      </>
+                    )}
                   </tbody>
                 </table>
               </td>
             </tr>
 
             {/* Payment row — bank */}
-            {invoice.paymentMethod === "bank" && invoice.bankName && (
+            {showPayment && invoice.paymentMethod === "bank" && invoice.bankName && (
               <tr>
                 <td style={{ ...s.mainTd, padding: "5px 10px", fontSize: "12px" }} colSpan={2}>
                   <strong>Bank Details: </strong>
@@ -477,7 +483,7 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
             )}
 
             {/* Payment row — upi */}
-            {invoice.paymentMethod === "upi" && (
+            {showPayment && invoice.paymentMethod === "upi" && (
               <tr>
                 <td style={{ ...s.mainTd, padding: "5px 10px", fontSize: "12px" }} colSpan={2}>
                   <strong>Payment: </strong>UPI / Online

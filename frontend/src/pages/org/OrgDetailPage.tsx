@@ -81,6 +81,7 @@ const editSchema = z.object({
     .or(z.literal("")),
   businessType: z.string().max(60, "Max 60 characters").optional(),
   invoicePrefix: z.string().max(6, "Prefix max 6 chars").optional(),
+  estimatePrefix: z.string().max(6, "Prefix max 6 chars").optional(),
 })
 
 type EditForm = z.infer<typeof editSchema>
@@ -110,6 +111,7 @@ function EditOrgDialog({
       stateCode: org.stateCode ?? "",
       businessType: org.businessType ?? "",
       invoicePrefix: org.invoicePrefix,
+      estimatePrefix: org.estimatePrefix ?? "EST",
     },
   })
 
@@ -124,6 +126,7 @@ function EditOrgDialog({
       stateCode: org.stateCode ?? "",
       businessType: org.businessType ?? "",
       invoicePrefix: org.invoicePrefix,
+      estimatePrefix: org.estimatePrefix ?? "EST",
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org.id, org.updatedAt])
@@ -142,6 +145,7 @@ function EditOrgDialog({
           stateCode: values.stateCode || undefined,
           businessType: values.businessType || undefined,
           invoicePrefix: values.invoicePrefix || undefined,
+          estimatePrefix: values.estimatePrefix || undefined,
         },
       }).unwrap()
       refetch()
@@ -203,12 +207,20 @@ function EditOrgDialog({
             description="Pick a suggestion or type your own"
           />
           <BusinessTypeOptions />
-          <InvoInput
-            control={form.control}
-            name="invoicePrefix"
-            label="Invoice Prefix"
-            description="Max 6 characters."
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <InvoInput
+              control={form.control}
+              name="invoicePrefix"
+              label="Invoice Prefix"
+              description="Max 6 characters."
+            />
+            <InvoInput
+              control={form.control}
+              name="estimatePrefix"
+              label="Estimate Prefix"
+              description="Max 6 characters."
+            />
+          </div>
           <DialogFooter className="mt-1">
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="animate-spin" />} Save changes
@@ -480,6 +492,7 @@ export default function OrgDetailPage() {
   }
 
   const nextInvoiceCode = `${org.invoicePrefix}-${String(org.nextInvoiceNumber).padStart(4, "0")}`
+  const nextEstimateCode = `${org.estimatePrefix ?? "EST"}-${String(org.nextEstimateNumber ?? 1).padStart(4, "0")}`
 
   return (
     <div className="flex flex-col gap-6">
@@ -534,14 +547,25 @@ export default function OrgDetailPage() {
           <Card>
             <CardContent className="flex flex-col items-center gap-4 pt-6">
               <LogoSection org={org} />
-              <div className="w-full border-t pt-4 text-center">
-                <p className="text-xs text-muted-foreground">Next Invoice</p>
-                <p className="mt-1 font-heading text-lg font-semibold tracking-wide">
-                  {nextInvoiceCode}
-                </p>
-                <Badge variant="secondary" className="mt-1.5 text-xs">
-                  Prefix: {org.invoicePrefix}
-                </Badge>
+              <div className="w-full border-t pt-4 grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground">Next Invoice</p>
+                  <p className="mt-1 font-heading text-sm font-semibold tracking-wide">
+                    {nextInvoiceCode}
+                  </p>
+                  <Badge variant="secondary" className="mt-1.5 text-xs">
+                    {org.invoicePrefix}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Next Estimate</p>
+                  <p className="mt-1 font-heading text-sm font-semibold tracking-wide">
+                    {nextEstimateCode}
+                  </p>
+                  <Badge variant="secondary" className="mt-1.5 text-xs">
+                    {org.estimatePrefix ?? "EST"}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -576,6 +600,11 @@ export default function OrgDetailPage() {
               icon={FileText}
               label="Invoice Prefix"
               value={org.invoicePrefix}
+            />
+            <DetailRow
+              icon={FileText}
+              label="Estimate Prefix"
+              value={org.estimatePrefix ?? "EST"}
             />
           </CardContent>
         </Card>

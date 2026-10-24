@@ -32,8 +32,8 @@ type InvoiceData = {
   igstTotal?: Num;
   roundOff?: Num;
   grandTotal: Num;
-  receivedAmount: Num;
-  balanceDue: Num;
+  receivedAmount?: Num;
+  balanceDue?: Num;
   amountInWords?: string | null;
   challanNo?: string | null;
   vehicleNo?: string | null;
@@ -95,8 +95,12 @@ export function buildInvoiceHtml(data: {
   org: OrgData;
   logoBase64: string | null;
   qrDataUrl: string | null;
+  documentTitle?: string;
+  showPayment?: boolean;
 }): string {
   const { invoice, org, logoBase64, qrDataUrl } = data;
+  const docTitle = data.documentTitle ?? "Invoice";
+  const showPayment = data.showPayment !== false;
 
   const subtotal = num(invoice.subtotal);
   const tax = num(invoice.tax);
@@ -153,7 +157,7 @@ export function buildInvoiceHtml(data: {
   const metaHtml = `
     <table style="width:100%;border-collapse:collapse;">
       <tr>
-        ${metaRow("Invoice No.", invoice.invoiceNumber)}
+        ${metaRow(`${docTitle} No.`, invoice.invoiceNumber)}
         ${metaRow("Date", invoiceDateStr)}
       </tr>
       <tr>
@@ -245,32 +249,38 @@ export function buildInvoiceHtml(data: {
   }
 
   amountRows += `
-    <tr><td ${amtTd}><strong>Total</strong></td><td ${amtVal}><strong>&#8377; ${fmt(grandTotal)}</strong></td></tr>
+    <tr><td ${amtTd}><strong>Total</strong></td><td ${amtVal}><strong>&#8377; ${fmt(grandTotal)}</strong></td></tr>`;
+
+  if (showPayment) {
+    amountRows += `
     <tr><td ${amtTd}>Received</td><td ${amtVal}>&#8377; ${fmt(received)}</td></tr>
     <tr><td ${amtTd}>Balance</td><td ${amtVal}>&#8377; ${fmt(balance)}</td></tr>`;
+  }
 
   // Payment row
   let paymentRowHtml = "";
-  if (invoice.paymentMethod === "bank" && invoice.bankName) {
-    let bankDetail = esc(invoice.bankName);
-    if (invoice.bankAccount) bankDetail += ` | A/C: ${esc(invoice.bankAccount)}`;
-    if (invoice.bankIfsc) bankDetail += ` | IFSC: ${esc(invoice.bankIfsc)}`;
-    paymentRowHtml = `
-      <tr>
-        <td style="border:1px solid #000;padding:5px 10px;font-size:12px;" colspan="2">
-          <strong>Bank Details: </strong>${bankDetail}
-        </td>
-      </tr>`;
-  } else if (invoice.paymentMethod === "upi") {
-    let upiDetail = "UPI / Online";
-    if (invoice.transactionNumber)
-      upiDetail += ` | Txn No.: ${esc(invoice.transactionNumber)}`;
-    paymentRowHtml = `
-      <tr>
-        <td style="border:1px solid #000;padding:5px 10px;font-size:12px;" colspan="2">
-          <strong>Payment: </strong>${upiDetail}
-        </td>
-      </tr>`;
+  if (showPayment) {
+    if (invoice.paymentMethod === "bank" && invoice.bankName) {
+      let bankDetail = esc(invoice.bankName);
+      if (invoice.bankAccount) bankDetail += ` | A/C: ${esc(invoice.bankAccount)}`;
+      if (invoice.bankIfsc) bankDetail += ` | IFSC: ${esc(invoice.bankIfsc)}`;
+      paymentRowHtml = `
+        <tr>
+          <td style="border:1px solid #000;padding:5px 10px;font-size:12px;" colspan="2">
+            <strong>Bank Details: </strong>${bankDetail}
+          </td>
+        </tr>`;
+    } else if (invoice.paymentMethod === "upi") {
+      let upiDetail = "UPI / Online";
+      if (invoice.transactionNumber)
+        upiDetail += ` | Txn No.: ${esc(invoice.transactionNumber)}`;
+      paymentRowHtml = `
+        <tr>
+          <td style="border:1px solid #000;padding:5px 10px;font-size:12px;" colspan="2">
+            <strong>Payment: </strong>${upiDetail}
+          </td>
+        </tr>`;
+    }
   }
 
   // QR
@@ -302,7 +312,7 @@ export function buildInvoiceHtml(data: {
 </head>
 <body style="font-family:Arial,sans-serif;font-size:13px;background:#fff;padding:30px 40px;">
 
-  <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:16px;">Invoice</div>
+  <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:16px;">${esc(docTitle)}</div>
 
   <table style="width:100%;border-collapse:collapse;border:1px solid #000;">
     <tbody>
@@ -328,7 +338,7 @@ export function buildInvoiceHtml(data: {
       <!-- ROW 3: Words | Amounts -->
       <tr>
         <td style="border:1px solid #000;padding:6px 10px;vertical-align:top;width:45%;">
-          <div style="font-size:12px;margin-bottom:2px;">Invoice Amount In Words</div>
+          <div style="font-size:12px;margin-bottom:2px;">${esc(docTitle)} Amount In Words</div>
           <div style="font-weight:bold;font-size:13px;">${esc(invoice.amountInWords)}</div>
         </td>
         <td style="border:1px solid #000;padding:0;vertical-align:top;">

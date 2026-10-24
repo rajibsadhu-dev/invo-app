@@ -129,6 +129,7 @@ function OrgContextNav({ orgId, onClose }: { orgId: number; onClose: () => void 
       <NavItem to={`/org/${orgId}/inventory`} icon={Warehouse} label="Inventory" onClick={onClose} />
       <NavItem to={`/org/${orgId}/suppliers`} icon={Truck} label="Suppliers" onClick={onClose} />
       <NavItem to={`/org/${orgId}/purchase-orders`} icon={ClipboardList} label="Purchase Orders" onClick={onClose} />
+      <NavItem to={`/org/${orgId}/estimates`} icon={FileText} label="Estimates" onClick={onClose} />
       <NavItem to={`/org/${orgId}/invoices`} icon={ReceiptText} label="Invoices" onClick={onClose} />
     </div>
   )

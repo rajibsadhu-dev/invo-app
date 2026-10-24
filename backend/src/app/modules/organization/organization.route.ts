@@ -18,6 +18,7 @@ import { VariantAttributeRoutes } from "@/app/modules/variant-attribute/variantA
 import { InventoryRoutes } from "@/app/modules/inventory/inventory.route";
 import { SupplierRoutes } from "@/app/modules/supplier/supplier.route";
 import { PurchaseOrderRoutes } from "@/app/modules/purchase-order/purchaseOrder.route";
+import { EstimateRoutes } from "@/app/modules/estimate/estimate.route";
 import { AnalyticsRoutes } from "@/app/modules/analytics/analytics.route";
 
 const router = Router();
@@ -90,6 +91,7 @@ router.use("/:id/variant-attributes", VariantAttributeRoutes);
 router.use("/:id/inventory", InventoryRoutes);
 router.use("/:id/suppliers", SupplierRoutes);
 router.use("/:id/purchase-orders", PurchaseOrderRoutes);
+router.use("/:id/estimates", EstimateRoutes);
 router.use("/:id/analytics", AnalyticsRoutes);
 
 // Invoice field config — any member can read, owner/admin can update

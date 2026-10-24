@@ -29,7 +29,11 @@ export type OrgPermission =
   | "purchase_order:create"
   | "purchase_order:edit"
   | "purchase_order:delete"
-  | "purchase_order:view";
+  | "purchase_order:view"
+  | "estimate:create"
+  | "estimate:edit"
+  | "estimate:delete"
+  | "estimate:view";
 
 const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
   owner: new Set([
@@ -56,6 +60,10 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "purchase_order:edit",
     "purchase_order:delete",
     "purchase_order:view",
+    "estimate:create",
+    "estimate:edit",
+    "estimate:delete",
+    "estimate:view",
   ]),
   admin: new Set([
     "org:manage",
@@ -81,6 +89,10 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "purchase_order:edit",
     "purchase_order:delete",
     "purchase_order:view",
+    "estimate:create",
+    "estimate:edit",
+    "estimate:delete",
+    "estimate:view",
   ]),
   manager: new Set([
     "org:invite",
@@ -104,6 +116,10 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "purchase_order:edit",
     "purchase_order:delete",
     "purchase_order:view",
+    "estimate:create",
+    "estimate:edit",
+    "estimate:delete",
+    "estimate:view",
   ]),
   staff: new Set([
     "invoice:create",
@@ -116,6 +132,9 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "product:view",
     "supplier:view",
     "purchase_order:view",
+    "estimate:create",
+    "estimate:edit",
+    "estimate:view",
   ]),
   viewer: new Set([
     "invoice:view",
@@ -123,6 +142,7 @@ const ROLE_PERMISSIONS: Record<OrgRole, Set<OrgPermission>> = {
     "product:view",
     "supplier:view",
     "purchase_order:view",
+    "estimate:view",
   ]),
 };
 
