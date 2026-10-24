@@ -64,6 +64,7 @@ const envSchema = z
     SMTP_PASS: z.string().optional(),
     SMTP_FROM: z.string().optional(),
 
+    FRONTEND_URL: z.string().url().optional(),
     CORS_ORIGINS: commaList,
     COOKIE_CROSS_SITE: booleanish,
     MAX_LOGO_SIZE_MB: z.coerce.number().positive().max(25).default(5),
@@ -87,17 +88,12 @@ if (!parsed.success) {
 
 const env = parsed.data;
 
-/**
- * In a single-origin production deploy the SPA is served by Express, so no cross-origin
- * access is needed and an empty allowlist is correct. In development the SPA runs on the
- * Vite dev server instead, so fall back to it rather than silently blocking every request.
- */
 const corsOrigins =
   env.CORS_ORIGINS.length > 0
     ? env.CORS_ORIGINS
-    : env.NODE_ENV === "production"
-      ? []
-      : ["http://localhost:5173", "http://127.0.0.1:5173","http://localhost:5174", "http://127.0.0.1:5174"];
+    : env.FRONTEND_URL
+      ? [env.FRONTEND_URL]
+      : [];
 
 export default {
   env: env.NODE_ENV,
@@ -125,6 +121,7 @@ export default {
     pass: env.SMTP_PASS || "",
     from: env.SMTP_FROM || env.SMTP_USER || "",
   },
+  frontend_url: env.FRONTEND_URL || "",
   cors_origins: corsOrigins,
   cookie_cross_site: env.COOKIE_CROSS_SITE,
   max_logo_size_bytes: env.MAX_LOGO_SIZE_MB * 1024 * 1024,
