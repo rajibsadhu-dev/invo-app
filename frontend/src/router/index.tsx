@@ -34,6 +34,8 @@ import PurchaseOrdersPage from "@/pages/purchase-orders/PurchaseOrdersPage"
 import CreatePOPage from "@/pages/purchase-orders/CreatePOPage"
 import EditPOPage from "@/pages/purchase-orders/EditPOPage"
 import PODetailPage from "@/pages/purchase-orders/PODetailPage"
+import OrgDashboardPage from "@/pages/analytics/OrgDashboardPage"
+import GstSummaryPage from "@/pages/analytics/GstSummaryPage"
 
 const router = createBrowserRouter([
   {
@@ -80,6 +82,8 @@ const router = createBrowserRouter([
       { path: "profile", element: <ProfilePage /> },
       { path: "organizations", element: <OrganizationsPage /> },
       { path: "org/:orgId", element: <OrgDetailPage /> },
+      { path: "org/:orgId/dashboard", element: <OrgDashboardPage /> },
+      { path: "org/:orgId/dashboard/gst", element: <GstSummaryPage /> },
       { path: "org/:orgId/team", element: <TeamPage /> },
       { path: "org/:orgId/customers", element: <CustomersPage /> },
       { path: "org/:orgId/customers/:customerId", element: <CustomerDetailPage /> },

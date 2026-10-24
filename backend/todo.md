@@ -56,12 +56,13 @@
 - [x] Add `balanceDue` (grandTotal − receivedAmount) to invoice response
 - [x] Run Prisma migration
 
-## Phase 6: Dashboard Analytics API (v0.7.0)
-- [ ] Create analytics routes under `/api/v1/organizations/:id/analytics`
-- [ ] GET /summary — total revenue, this month revenue, customer count, invoice count
-- [ ] GET /revenue-over-time — monthly revenue for last N months
-- [ ] GET /top-customers — top 5 customers by paid invoice revenue
-- [ ] GET /status-breakdown — invoice count by status
+## Phase 6: Dashboard Analytics API (v0.7.0) ✅
+- [x] Create analytics routes under `/api/v1/organizations/:id/analytics`
+- [x] GET /summary — total revenue, this month revenue, outstanding, overdue, customer count, invoice count, products, low stock
+- [x] GET /revenue-over-time — monthly revenue for last N months
+- [x] GET /gst-summary — GST filing helper grouped by rate slab, intra/inter-state split
+- [x] GET /top-customers — top N customers by paid invoice revenue
+- [x] GET /status-breakdown — invoice count + amount by status
 
 ## Phase 7: Hardening + GST (2026-09-06) — see /IMPROVEMENTS.md
 - [x] Zod-validated env config; fail fast on missing/weak/duplicate JWT secrets

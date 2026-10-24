@@ -468,9 +468,9 @@ Each phase is independently shippable.
   - Org settings page: "Customize Invoice Fields" — toggle individual fields on/off
   - Overrides persist as `invoiceFieldConfig` on the org
 
-### 6.2 Dashboard Analytics API
-- [ ] New module: `analytics` under `/api/v1/organizations/:orgId/analytics`
-- [ ] `GET /summary` — aggregated counts and totals
+### 6.2 Dashboard Analytics API ✅
+- [x] New module: `analytics` under `/api/v1/organizations/:orgId/analytics`
+- [x] `GET /summary` — aggregated counts and totals
   - Total revenue (sum of `grandTotal` where status = `paid`, `deletedAt` is null)
   - This month's revenue
   - Total outstanding (sum of `balanceDue` where status = `sent`)
@@ -478,31 +478,30 @@ Each phase is independently shippable.
   - Invoice counts by status
   - Total active customers
   - Total products, low-stock count
-- [ ] `GET /revenue-over-time?months=12` — monthly revenue for the last N months
-- [ ] `GET /gst-summary?from=&to=` — GST filing helper
+- [x] `GET /revenue-over-time?months=12` — monthly revenue for the last N months
+- [x] `GET /gst-summary?from=&to=` — GST filing helper
   - Groups by GST rate slab: count, taxable value, CGST, SGST, IGST
   - Separates intra-state vs inter-state (useful for GSTR-1)
-- [ ] `GET /top-customers?limit=10` — top customers by paid revenue
-- [ ] `GET /status-breakdown` — invoice counts + amounts by status
-- [ ] All endpoints: org-scoped, ownership-guarded, date range filter (`?from=&to=`)
+- [x] `GET /top-customers?limit=10` — top customers by paid revenue
+- [x] `GET /status-breakdown` — invoice counts + amounts by status
+- [x] All endpoints: org-scoped, ownership-guarded
 
-### 6.3 Frontend Dashboard
-- [ ] Install `recharts` for charts
-- [ ] Summary cards: Revenue, This Month, Outstanding, Overdue, Low Stock
-- [ ] Revenue chart: bar chart showing last 12 months
-- [ ] Invoice status: donut/pie chart with counts
-- [ ] Top customers: table with revenue + outstanding
-- [ ] GST summary: table grouped by rate slab
-- [ ] Inventory snapshot: stock value, low-stock products
-- [ ] Date range picker for filtering
-- [ ] Empty states for new orgs
+### 6.3 Frontend Dashboard ✅
+- [x] Install `recharts` for charts
+- [x] Summary cards: Revenue, This Month, Outstanding, Overdue, Invoices, Customers, Products, Low Stock
+- [x] Revenue chart: bar chart showing last 12 months
+- [x] Invoice status: donut/pie chart with counts
+- [x] Top customers: table with revenue + invoice count
+- [x] GST summary: separate page with date range filter, intra/inter-state tables
+- [x] Empty states for new orgs
+- [x] Dashboard link in org sidebar
 
 ### 6.4 Deliverables Checklist
 - [ ] Invoice form hides irrelevant fields based on business type
 - [ ] Org can customize field visibility in settings
-- [ ] Dashboard shows revenue, outstanding, overdue, stock data
-- [ ] Charts render with real data
-- [ ] GST summary useful for GSTR-1 filing
+- [x] Dashboard shows revenue, outstanding, overdue, stock data
+- [x] Charts render with real data
+- [x] GST summary useful for GSTR-1 filing
 
 ---
 

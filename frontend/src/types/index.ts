@@ -657,3 +657,49 @@ export type UpdatePOPayload = Partial<CreatePOPayload> & {
 export type ReceivePOPayload = {
   items: Array<{ itemId: number; quantity: number }>
 }
+
+// ─── Analytics ───────────────────────────────────────────────────────────────
+
+export type AnalyticsSummary = {
+  totalRevenue: string
+  thisMonthRevenue: string
+  totalOutstanding: string
+  totalOverdue: string
+  invoiceCountByStatus: Record<string, number>
+  totalCustomers: number
+  totalProducts: number
+  lowStockCount: number
+}
+
+export type RevenueMonth = {
+  month: string
+  revenue: string
+}
+
+export type GstSlabRow = {
+  gstRate: string
+  count: number
+  taxableValue: string
+  cgst: string
+  sgst: string
+  igst: string
+}
+
+export type GstSummaryData = {
+  rows: GstSlabRow[]
+  intraState: GstSlabRow[]
+  interState: GstSlabRow[]
+}
+
+export type TopCustomer = {
+  customerId: number
+  customerName: string
+  totalRevenue: string
+  invoiceCount: number
+}
+
+export type StatusBreakdown = {
+  status: string
+  count: number
+  totalAmount: string
+}

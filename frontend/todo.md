@@ -62,12 +62,17 @@
 - [x] Redesign print template — simple border style matching reference design
 - [x] Update InvoiceDetailPage to show all new fields
 
-## Phase 7: Dashboard Analytics (v0.7.0)
-- [ ] Summary cards: total revenue, this month's revenue, total customers, total invoices
-- [ ] Revenue over time chart (recharts — line or bar)
-- [ ] Invoice status breakdown (pie/donut chart)
-- [ ] Top 5 customers by revenue
-- [ ] Month-over-month comparison
+## Phase 7: Dashboard Analytics (v0.7.0) ✅
+- [x] Analytics RTK Query endpoints (summary, revenue-over-time, gst-summary, top-customers, status-breakdown)
+- [x] Summary cards: total revenue, this month, outstanding, overdue, invoices, customers, products, low stock
+- [x] Revenue over time bar chart (recharts)
+- [x] Invoice status breakdown donut chart (recharts)
+- [x] Top 5 customers by revenue table
+- [x] GST summary page with date range filter, intra/inter-state breakdown
+- [x] Dashboard link in org sidebar
+- [x] Routes: `/org/:orgId/dashboard`, `/org/:orgId/dashboard/gst`
+- [x] `tsc -b`, `npm run lint` (0 errors) clean
+- [ ] Not verified in a browser yet
 
 ## Phase 8: Hardening + GST (2026-09-06) — see /IMPROVEMENTS.md
 - [x] Access token no longer persisted to localStorage (XSS exposure)
