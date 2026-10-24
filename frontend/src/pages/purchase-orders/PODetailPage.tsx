@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Pencil, Trash2, Loader2, PackageCheck } from "lucide-react"
+import { useReactToPrint } from "react-to-print"
+import { Pencil, Trash2, Loader2, PackageCheck, Printer } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -39,6 +40,7 @@ import {
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { POStatusBadge } from "./PurchaseOrdersPage"
+import PrintablePO from "./PrintablePO"
 import { formatINR } from "@/lib/money"
 import type { POStatus, PurchaseOrderItem } from "@/types"
 import { getApiErrorMessage } from "@/lib/apiError"
@@ -227,6 +229,7 @@ export default function PODetailPage() {
   const pId = Number(poId)
 
   const [receiveOpen, setReceiveOpen] = useState(false)
+  const printRef = useRef<HTMLDivElement>(null)
 
   const { data: orgData } = useGetOrganizationByIdQuery(oId)
   const org = orgData?.data
@@ -243,6 +246,15 @@ export default function PODetailPage() {
     { label: "Purchase Orders", to: `/org/${oId}/purchase-orders` },
     { label: po?.poNumber ?? "PO" },
   ])
+
+  const logoUrl = org?.logo
+    ? `${import.meta.env.VITE_API_URL}/uploads/${org.logo}`
+    : null
+
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: po?.poNumber ?? "PO",
+  })
 
   if (isLoading) {
     return (
@@ -299,6 +311,9 @@ export default function PODetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => handlePrint()}>
+            <Printer className="h-4 w-4" /> Print
+          </Button>
           {canReceive && (
             <Button size="sm" onClick={() => setReceiveOpen(true)}>
               <PackageCheck className="h-4 w-4" /> Receive Goods
@@ -517,6 +532,13 @@ export default function PODetailPage() {
           open={receiveOpen}
           onOpenChange={setReceiveOpen}
         />
+      )}
+
+      {/* Hidden print template */}
+      {org && (
+        <div style={{ position: "absolute", left: "-9999px", top: 0, zIndex: -1 }}>
+          <PrintablePO ref={printRef} po={po} org={org} logoUrl={logoUrl} />
+        </div>
       )}
     </div>
   )

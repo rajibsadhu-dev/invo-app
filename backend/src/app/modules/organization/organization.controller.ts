@@ -114,6 +114,30 @@ const assignOrganization = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getInvoiceFieldConfig = catchAsync(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const result = await OrgService.getInvoiceFieldConfig(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Invoice field config retrieved successfully",
+    data: result,
+  });
+});
+
+const updateInvoiceFieldConfig = catchAsync(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const result = await OrgService.updateInvoiceFieldConfig(id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Invoice field config updated successfully",
+    data: result.invoiceFieldConfig,
+  });
+});
+
 export const OrgController = {
   createOrganization,
   getMyOrganizations,
@@ -123,4 +147,6 @@ export const OrgController = {
   uploadLogo,
   getAllOrganizations,
   assignOrganization,
+  getInvoiceFieldConfig,
+  updateInvoiceFieldConfig,
 };

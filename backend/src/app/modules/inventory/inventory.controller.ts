@@ -101,6 +101,18 @@ const getSummary = catchAsync(async (req, res) => {
   });
 });
 
+const getValuation = catchAsync(async (req, res) => {
+  const organizationId = Number(req.params.id);
+  const result = await InventoryService.getValuation(organizationId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Inventory valuation retrieved",
+    data: result,
+  });
+});
+
 export const InventoryController = {
   adjustStock,
   setStock,
@@ -108,4 +120,5 @@ export const InventoryController = {
   getProductMovements,
   getLowStock,
   getSummary,
+  getValuation,
 };

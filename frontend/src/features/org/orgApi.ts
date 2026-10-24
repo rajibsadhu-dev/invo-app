@@ -5,6 +5,7 @@ import type {
   CreateOrgPayload,
   UpdateOrgPayload,
 } from "@/types"
+import type { InvoiceFieldConfig } from "@/lib/invoiceFieldConfig"
 
 export const orgApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -54,6 +55,30 @@ export const orgApi = baseApi.injectEndpoints({
         { type: "Organization", id },
       ],
     }),
+
+    getInvoiceFieldConfig: builder.query<
+      ApiResponse<Partial<InvoiceFieldConfig> | null>,
+      number
+    >({
+      query: (orgId) => `/organizations/${orgId}/invoice-field-config`,
+      providesTags: (_result, _error, orgId) => [
+        { type: "Organization", id: `fieldConfig-${orgId}` },
+      ],
+    }),
+
+    updateInvoiceFieldConfig: builder.mutation<
+      ApiResponse<Partial<InvoiceFieldConfig>>,
+      { orgId: number; body: Partial<InvoiceFieldConfig> }
+    >({
+      query: ({ orgId, body }) => ({
+        url: `/organizations/${orgId}/invoice-field-config`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { orgId }) => [
+        { type: "Organization", id: `fieldConfig-${orgId}` },
+      ],
+    }),
   }),
 })
 
@@ -64,4 +89,6 @@ export const {
   useUpdateOrganizationMutation,
   useDeleteOrganizationMutation,
   useUploadOrgLogoMutation,
+  useGetInvoiceFieldConfigQuery,
+  useUpdateInvoiceFieldConfigMutation,
 } = orgApi

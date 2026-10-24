@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Pencil, Trash2, Loader2, Printer } from "lucide-react"
 import { toast } from "sonner"
@@ -17,6 +17,7 @@ import { useGetInvoiceByIdQuery, useUpdateInvoiceMutation, useDeleteInvoiceMutat
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { StatusBadge } from "./InvoicesPage"
+import QRCode from "qrcode"
 import PrintableInvoice from "./PrintableInvoice"
 import { formatINR } from "@/lib/money"
 import type { InvoiceStatus } from "@/types"
@@ -58,12 +59,23 @@ export default function InvoiceDetailPage() {
   const iId = Number(invoiceId)
 
   const printRef = useRef<HTMLDivElement>(null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
   const { data: orgData } = useGetOrganizationByIdQuery(oId)
   const org = orgData?.data
 
   const { data, isLoading, isError } = useGetInvoiceByIdQuery({ orgId: oId, invoiceId: iId })
   const invoice = data?.data
+
+  useEffect(() => {
+    if (!invoice?.verificationToken) return
+    let cancelled = false
+    const verifyUrl = `${window.location.origin}/verify/${invoice.verificationToken}`
+    QRCode.toDataURL(verifyUrl, { width: 200, margin: 1, errorCorrectionLevel: "M" })
+      .then((url) => { if (!cancelled) setQrDataUrl(url) })
+      .catch(() => { /* QR generation failed — leave null */ })
+    return () => { cancelled = true }
+  }, [invoice?.verificationToken])
 
   const [updateInvoice, { isLoading: isUpdating }] = useUpdateInvoiceMutation()
   const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation()
@@ -401,7 +413,7 @@ export default function InvoiceDetailPage() {
       {/* Off-screen printable invoice */}
       {org && (
         <div style={{ position: "absolute", left: "-9999px", top: 0, zIndex: -1 }}>
-          <PrintableInvoice ref={printRef} invoice={invoice} org={org} logoUrl={logoUrl} />
+          <PrintableInvoice ref={printRef} invoice={invoice} org={org} logoUrl={logoUrl} qrDataUrl={qrDataUrl} />
         </div>
       )}
     </div>

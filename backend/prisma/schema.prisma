@@ -89,6 +89,10 @@ model Organization {
   nextInvoiceNumber Int      @default(1) @map("next_invoice_number")
   /// When to deduct stock on invoice status change: "sent" (default) or "created".
   deductStockOn     String   @default("sent") @map("deduct_stock_on") @db.VarChar(10)
+  /// Per-org override for which optional fields the invoice form shows.
+  /// Keys: challanNo, vehicleNo, siteLocation, billingAddress. Values: true/false.
+  /// When null the frontend falls back to the businessType default map.
+  invoiceFieldConfig Json?   @map("invoice_field_config")
   poPrefix          String   @default("PO") @map("po_prefix") @db.VarChar(10)
   nextPoNumber      Int      @default(1) @map("next_po_number")
   createdAt         DateTime @default(now()) @map("created_at")
@@ -315,6 +319,8 @@ model Invoice {
   termsAndConditions  String?        @map("terms_and_conditions") @db.Text
   notes               String?        @db.Text
   authorizedSignatory String?        @map("authorized_signatory")
+  // QR verification
+  verificationToken   String?        @unique @map("verification_token") @db.VarChar(64)
   /// Soft delete. Invoices are financial records: they are withdrawn, never destroyed.
   deletedAt           DateTime?      @map("deleted_at")
   createdAt           DateTime       @default(now()) @map("created_at")

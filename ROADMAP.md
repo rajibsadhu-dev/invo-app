@@ -417,14 +417,14 @@ Each phase is independently shippable.
   - Create/edit PO form: supplier combobox, product line items (product picker with purchasePrice), GST per line
   - PO detail page: status actions, items with received vs ordered, "Receive Goods" button
   - Receive dialog: enter received quantities per item, "Receive All" shortcut
-  - [ ] PO print template (not yet implemented)
+  - [x] PO print template (PrintablePO.tsx with react-to-print)
 
 ### 5.3 Purchase Cost Tracking
 - [x] Track `purchasePrice` on Product (already in Phase 2 schema)
 - [x] PO item rate updates `purchasePrice` on the product (latest price on receive)
 - [x] Product picker shows purchasePrice for PO forms
-- [ ] Inventory valuation report: stock value based on purchase price
-- [ ] Profit margin indicators: selling price vs purchase price per product
+- [x] Inventory valuation report: stock value based on purchase price
+- [x] Profit margin indicators: selling price vs purchase price per product
 
 ### 5.4 Deliverables Checklist
 - [x] Supplier CRUD with contact details and GST
@@ -434,19 +434,20 @@ Each phase is independently shippable.
 - [x] Partial receiving supported
 - [x] Purchase price tracked per product
 - [x] Stock movement audit trail includes purchase references
-- [ ] PO print template
-- [ ] Inventory valuation report
-- [ ] Profit margin indicators
+- [x] PO print template
+- [x] Inventory valuation report
+- [x] Profit margin indicators
 
 ---
 
-## Phase 6 — Smart Invoice Form & Dashboard
+## Phase 6 — Smart Invoice Form & Dashboard ✅
 
 > Goal: Business type controls which invoice fields are visible. Dashboard shows
-> actionable analytics.
+> actionable analytics. QR code verification for invoice authenticity.
+> **Complete: 2026-10-24** — backend, schema and frontend.
 
-### 6.1 Business-Type Field Visibility Rules
-- [ ] **Define field groups by business type:**
+### 6.1 Business-Type Field Visibility Rules ✅
+- [x] **Define field groups by business type:**
   ```
   Trading:        challanNo ✓, vehicleNo ✓, siteLocation ✗, billingAddress ✓
   Manufacturing:  challanNo ✓, vehicleNo ✓, siteLocation ✗, billingAddress ✓
@@ -459,10 +460,10 @@ Each phase is independently shippable.
   Freelancing:    challanNo ✗, vehicleNo ✗, siteLocation ✗, billingAddress ✗
   Default (other): all fields visible (user hides what they don't need)
   ```
-- [ ] **Backend:** Store visibility rules as a JSON config on Organization
+- [x] **Backend:** Store visibility rules as a JSON config on Organization
   - `invoiceFieldConfig Json?` — allows per-org override beyond the business type default
   - API: `GET /organizations/:orgId/invoice-field-config`, `PATCH` to customize
-- [ ] **Frontend:** Invoice form respects field visibility
+- [x] **Frontend:** Invoice form respects field visibility
   - On form load: check org's `businessType` → apply visibility rules
   - Hidden fields are not rendered (not just `display: none`)
   - Org settings page: "Customize Invoice Fields" — toggle individual fields on/off
@@ -496,12 +497,33 @@ Each phase is independently shippable.
 - [x] Empty states for new orgs
 - [x] Dashboard link in org sidebar
 
-### 6.4 Deliverables Checklist
-- [ ] Invoice form hides irrelevant fields based on business type
-- [ ] Org can customize field visibility in settings
+### 6.5 Invoice QR Code Verification ✅
+- [x] **Schema:** `verificationToken String? @unique` on Invoice (UUID, generated at creation)
+- [x] **Backend:** Org-level toggle via `invoiceFieldConfig.qrVerification`
+  - When enabled, `createInvoice()` generates `crypto.randomUUID()` as token
+  - `GET /verify/:token` — public endpoint (no auth), returns full invoice + org + customer
+  - Invalid/missing token returns 404 "Could not be verified"
+- [x] **Frontend:** QR code on printed invoice (bottom-right, signatory area)
+  - `qrcode` npm package generates base64 PNG data URL
+  - QR encodes `{origin}/verify/{token}` — works in print without external requests
+  - "Scan to verify" caption above QR
+- [x] **Frontend:** Public verification page at `/verify/:token`
+  - Valid token: green "Invoice Verified" banner + full PrintableInvoice render
+  - Invalid token: red "Invoice Not Verified" card with explanation
+  - No login required — standalone page outside AppLayout
+- [x] **Org toggle:** "QR Code Verification" switch in Invoice Field Visibility settings
+  - Default off for all business types
+  - Only new invoices created after enabling get tokens (no backfill)
+
+### 6.6 Deliverables Checklist
+- [x] Invoice form hides irrelevant fields based on business type
+- [x] Org can customize field visibility in settings
 - [x] Dashboard shows revenue, outstanding, overdue, stock data
 - [x] Charts render with real data
 - [x] GST summary useful for GSTR-1 filing
+- [x] QR code on printed invoice verifies authenticity
+- [x] Public verification page works without login
+- [x] Fake/invalid QR shows clear warning
 
 ---
 

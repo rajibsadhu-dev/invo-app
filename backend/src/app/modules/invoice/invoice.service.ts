@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import httpStatus from "http-status";
 import { Prisma, InvoiceStatus, OrgRole, Customer, Organization } from "@prisma/client";
 import prisma from "@/lib/prisma";
@@ -271,6 +272,9 @@ const createInvoice = async (organizationId: number, payload: ICreateInvoice, cr
     const sequence = org.nextInvoiceNumber - 1;
     const invoiceNumber = `${org.invoicePrefix}-${String(sequence).padStart(4, "0")}`;
 
+    const fieldConfig = (org.invoiceFieldConfig as Record<string, boolean> | null) ?? {};
+    const verificationToken = fieldConfig.qrVerification ? crypto.randomUUID() : undefined;
+
     const { placeOfSupply, isIntraState } = resolvePlaceOfSupply(
       org,
       customer,
@@ -310,6 +314,7 @@ const createInvoice = async (organizationId: number, payload: ICreateInvoice, cr
         placeOfSupply,
         isIntraState,
         amountInWords: amountInWords(totals.grandTotal),
+        verificationToken,
         ...pickOptionalFields(payload),
         items: { create: totals.lines },
       },
@@ -578,10 +583,39 @@ const deleteInvoice = async (
   });
 };
 
+const getInvoiceByVerificationToken = async (token: string) => {
+  const invoice = await prisma.invoice.findUnique({
+    where: { verificationToken: token },
+    include: {
+      items: true,
+      customer: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          phone: true,
+          email: true,
+          logo: true,
+          registerNumber: true,
+          gstNumber: true,
+          stateCode: true,
+          businessType: true,
+        },
+      },
+    },
+  });
+
+  if (!invoice || invoice.deletedAt) return null;
+
+  return addBalanceDue(invoice);
+};
+
 export const InvoiceService = {
   createInvoice,
   getInvoices,
   getInvoiceById,
   updateInvoice,
   deleteInvoice,
+  getInvoiceByVerificationToken,
 };

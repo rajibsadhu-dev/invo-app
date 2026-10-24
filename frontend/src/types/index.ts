@@ -271,6 +271,7 @@ export type Invoice = {
   termsAndConditions?: string | null
   notes?: string | null
   authorizedSignatory?: string | null
+  verificationToken?: string | null
   deletedAt?: string | null
   createdAt: string
   updatedAt: string

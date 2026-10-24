@@ -3,6 +3,7 @@ import type {
   ApiResponse,
   PaginatedResponse,
   Invoice,
+  Organization,
   InvoiceStatus,
   CreateInvoicePayload,
   UpdateInvoicePayload,
@@ -88,6 +89,10 @@ export const invoiceApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { orgId }) => [{ type: "Invoice", id: orgId }],
     }),
+
+    verifyInvoice: builder.query<ApiResponse<Invoice & { organization: Organization }>, string>({
+      query: (token) => `/verify/${token}`,
+    }),
   }),
 })
 
@@ -97,4 +102,5 @@ export const {
   useCreateInvoiceMutation,
   useUpdateInvoiceMutation,
   useDeleteInvoiceMutation,
+  useVerifyInvoiceQuery,
 } = invoiceApi

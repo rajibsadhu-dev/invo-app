@@ -53,10 +53,22 @@ const updateOrgSchema = z.object({
   }),
 });
 
+const invoiceFieldConfigSchema = z.object({
+  challanNo: z.boolean().optional(),
+  vehicleNo: z.boolean().optional(),
+  siteLocation: z.boolean().optional(),
+  billingAddress: z.boolean().optional(),
+  qrVerification: z.boolean().optional(),
+});
+
+const updateInvoiceFieldConfigSchema = z.object({
+  body: invoiceFieldConfigSchema,
+});
+
 const assignOrgSchema = z.object({
   body: z.object({
     userId: z.number({ error: "User ID is required" }).int().positive("User ID must be a positive integer"),
   }),
 });
 
-export const OrgValidation = { createOrgSchema, updateOrgSchema, assignOrgSchema };
+export const OrgValidation = { createOrgSchema, updateOrgSchema, updateInvoiceFieldConfigSchema, assignOrgSchema };

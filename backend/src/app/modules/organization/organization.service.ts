@@ -3,13 +3,14 @@ import fs from "fs";
 import path from "path";
 import prisma from "@/lib/prisma";
 import ApiError from "@/app/errors/ApiError";
-import { ICreateOrganization, IUpdateOrganization } from "./organization.interface";
+import { ICreateOrganization, IUpdateOrganization, InvoiceFieldConfig } from "./organization.interface";
 
 const createOrganization = async (ownerId: number, payload: ICreateOrganization) => {
   return prisma.$transaction(async (tx) => {
+    const { invoiceFieldConfig: _ifc, ...rest } = payload;
     const org = await tx.organization.create({
       data: {
-        ...payload,
+        ...rest,
         ownerId,
         email: payload.email || null,
         businessType: payload.businessType || null,
@@ -50,10 +51,11 @@ const getOrganizationById = async (id: number) => {
 };
 
 const updateOrganization = async (id: number, payload: IUpdateOrganization) => {
+  const { invoiceFieldConfig: _ifc, ...rest } = payload;
   return prisma.organization.update({
     where: { id },
     data: {
-      ...payload,
+      ...rest,
       // Only coerce to null when explicitly provided as an empty string
       ...(payload.email !== undefined && { email: payload.email || null }),
       ...(payload.businessType !== undefined && {
@@ -153,6 +155,23 @@ const assignOrganization = async (orgId: number, userId: number) => {
   });
 };
 
+const getInvoiceFieldConfig = async (id: number): Promise<InvoiceFieldConfig | null> => {
+  const org = await prisma.organization.findUnique({
+    where: { id },
+    select: { invoiceFieldConfig: true },
+  });
+  if (!org) throw new ApiError(httpStatus.NOT_FOUND, "Organization not found");
+  return (org.invoiceFieldConfig as InvoiceFieldConfig | null) ?? null;
+};
+
+const updateInvoiceFieldConfig = async (id: number, config: InvoiceFieldConfig) => {
+  return prisma.organization.update({
+    where: { id },
+    data: { invoiceFieldConfig: config },
+    select: { invoiceFieldConfig: true },
+  });
+};
+
 export const OrgService = {
   createOrganization,
   getMyOrganizations,
@@ -162,4 +181,6 @@ export const OrgService = {
   updateLogo,
   getAllOrganizations,
   assignOrganization,
+  getInvoiceFieldConfig,
+  updateInvoiceFieldConfig,
 };

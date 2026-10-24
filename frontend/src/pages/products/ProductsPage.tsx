@@ -206,6 +206,7 @@ export default function ProductsPage() {
               <TableHead>Category</TableHead>
               <TableHead>HSN/SAC</TableHead>
               <TableHead className="text-right">Price (₹)</TableHead>
+              <TableHead className="text-right">Margin</TableHead>
               <TableHead className="text-right">GST</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -214,21 +215,21 @@ export default function ProductsPage() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                   Loading products…
                 </TableCell>
               </TableRow>
             )}
             {isError && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-destructive">
+                <TableCell colSpan={9} className="py-10 text-center text-destructive">
                   Failed to load products
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && !isError && products.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-12 text-center">
+                <TableCell colSpan={9} className="py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Package className="h-8 w-8 text-muted-foreground/40" />
                     <p className="text-sm text-muted-foreground">
@@ -259,6 +260,22 @@ export default function ProductsPage() {
                 <TableCell className="text-muted-foreground">{product.hsnCode ?? "—"}</TableCell>
                 <TableCell className="text-right">
                   {formatINR(Number(product.sellingPrice))}
+                </TableCell>
+                <TableCell className="text-right">
+                  {product.purchasePrice != null ? (
+                    (() => {
+                      const sell = Number(product.sellingPrice)
+                      const buy = Number(product.purchasePrice)
+                      const margin = sell > 0 ? ((sell - buy) / sell) * 100 : 0
+                      return (
+                        <span className={margin < 0 ? "text-destructive" : margin < 10 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}>
+                          {margin.toFixed(1)}%
+                        </span>
+                      )
+                    })()
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground">
                   {Number(product.gstRate)}%

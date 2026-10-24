@@ -3,6 +3,7 @@ import { AuthRoutes } from "@/app/modules/auth/auth.route";
 import { UserRoutes } from "@/app/modules/user/user.route";
 import { OrgRoutes } from "@/app/modules/organization/organization.route";
 import { AdminOrgRoutes } from "@/app/modules/organization/organization.admin.route";
+import { VerifyRoutes } from "@/app/modules/verify/verify.route";
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.get("/health", (_req, res) => {
 });
 
 router.use("/auth", AuthRoutes);
+router.use("/verify", VerifyRoutes);
 router.use("/users", UserRoutes);
 router.use("/organizations", OrgRoutes);
 router.use("/admin/organizations", AdminOrgRoutes);

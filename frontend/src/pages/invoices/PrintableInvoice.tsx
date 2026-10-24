@@ -5,6 +5,7 @@ interface PrintableInvoiceProps {
   invoice: Invoice
   org: Organization
   logoUrl: string | null
+  qrDataUrl?: string | null
 }
 
 /* ─── Exact CSS from the HTML template ───────────────────────────────────────
@@ -209,7 +210,7 @@ function items0HasGst(invoice: PrintableInvoiceProps["invoice"]): boolean {
 }
 
 const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
-  ({ invoice, org, logoUrl }, ref) => {
+  ({ invoice, org, logoUrl, qrDataUrl }, ref) => {
     const subtotal = Number(invoice.subtotal)
     const tax = Number(invoice.tax)
     const discount = Number(invoice.discount)
@@ -499,6 +500,18 @@ const PrintableInvoice = forwardRef<HTMLDivElement, PrintableInvoiceProps>(
                 )}
               </td>
               <td style={s.signatoryCell}>
+                {qrDataUrl && (
+                  <div style={{ marginBottom: "10px" }}>
+                    <img
+                      src={qrDataUrl}
+                      alt="Verification QR"
+                      style={{ width: "80px", height: "80px", margin: "0 auto", display: "block" }}
+                    />
+                    <div style={{ fontSize: "9px", color: "#666", marginTop: "2px" }}>
+                      Scan to verify
+                    </div>
+                  </div>
+                )}
                 {invoice.authorizedSignatory
                   ? <>{invoice.authorizedSignatory}<br /></>
                   : null

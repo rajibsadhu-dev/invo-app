@@ -1,5 +1,6 @@
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { Request } from "express";
+import config from "@/config";
 
 const message = {
   success: false,
@@ -7,13 +8,15 @@ const message = {
   errorMessages: [{ path: "", message: "Too many attempts. Please try again later." }],
 };
 
+const isDev = config.env === "development";
+
 /**
  * Credential endpoints. Keyed on IP + submitted email so one noisy IP behind NAT
  * cannot lock out every account, and one account cannot be sprayed from one host.
  */
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
+  windowMs: isDev ? 1 * 60 * 1000 : 15 * 60 * 1000,
+  limit: isDev ? 100 : 10,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message,

@@ -6,7 +6,8 @@ import { toast } from "sonner"
 import { InvoForm } from "@/components/form"
 import { useCreateInvoiceMutation } from "@/features/invoice/invoiceApi"
 import { useGetCustomersQuery } from "@/features/customer/customerApi"
-import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
+import { useGetOrganizationByIdQuery, useGetInvoiceFieldConfigQuery } from "@/features/org/orgApi"
+import { resolveFieldConfig } from "@/lib/invoiceFieldConfig"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { InvoiceFormFields } from "./InvoiceFormFields"
 import { invoiceFormSchema, todayString, type InvoiceFormValues } from "./invoiceForm.schema"
@@ -29,6 +30,9 @@ export default function CreateInvoicePage() {
 
   const { data: customersData } = useGetCustomersQuery({ orgId: id, limit: 100 })
   const customers = customersData?.data ?? []
+
+  const { data: fieldConfigData } = useGetInvoiceFieldConfigQuery(id)
+  const fieldConfig = resolveFieldConfig(org?.businessType, fieldConfigData?.data)
 
   const [createInvoice, { isLoading }] = useCreateInvoiceMutation()
 
@@ -91,6 +95,7 @@ export default function CreateInvoicePage() {
           orgId={id}
           customers={customers}
           orgStateCode={org?.stateCode}
+          fieldConfig={fieldConfig}
           isSubmitting={isLoading}
           submitLabel="Create Invoice"
         />

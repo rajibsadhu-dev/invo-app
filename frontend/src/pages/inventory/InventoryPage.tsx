@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom"
-import { Warehouse, AlertTriangle, History, Package } from "lucide-react"
-import { useGetInventorySummaryQuery, useGetLowStockQuery } from "@/features/inventory/inventoryApi"
+import { Warehouse, AlertTriangle, History, Package, IndianRupee } from "lucide-react"
+import { useGetInventorySummaryQuery, useGetLowStockQuery, useGetInventoryValuationQuery } from "@/features/inventory/inventoryApi"
+import { formatINR } from "@/lib/money"
 import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 
@@ -53,6 +54,9 @@ export default function InventoryPage() {
   const { data: lowStockData } = useGetLowStockQuery(id)
   const lowStockCount = lowStockData?.data?.totalCount ?? 0
 
+  const { data: valuationData } = useGetInventoryValuationQuery(id)
+  const valuation = valuationData?.data
+
   return (
     <div className="flex flex-col gap-4 max-w-3xl">
       <div className="flex items-center gap-2">
@@ -102,6 +106,30 @@ export default function InventoryPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {valuation && (
+            <div className="rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+              <h3 className="font-heading text-sm font-semibold mb-3">Inventory Valuation</h3>
+              <div className="flex items-baseline gap-2 mb-3">
+                <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                <span className="text-2xl font-bold tabular-nums">{formatINR(Number(valuation.totalValue))}</span>
+                <span className="text-sm text-muted-foreground">total stock value</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Products</span>
+                  <span className="font-medium tabular-nums">{formatINR(Number(valuation.productValue))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Variants</span>
+                  <span className="font-medium tabular-nums">{formatINR(Number(valuation.variantValue))}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Based on purchase price (falls back to selling price when no purchase price is set).
+              </p>
             </div>
           )}
 

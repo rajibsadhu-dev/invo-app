@@ -17,6 +17,7 @@ import {
   type InvoiceFormValues,
 } from "./invoiceForm.schema"
 import type { Customer } from "@/types"
+import type { InvoiceFieldConfig } from "@/lib/invoiceFieldConfig"
 import { ProductPickerCell } from "./ProductPickerCell"
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
@@ -49,6 +50,8 @@ type Props = {
   customers: Customer[]
   /** Supplier's GST state code — compared with the customer's to pick CGST+SGST vs IGST. */
   orgStateCode?: string | null
+  /** Which optional fields to show in the "Additional Details" section. */
+  fieldConfig?: InvoiceFieldConfig
   isSubmitting: boolean
   submitLabel: string
 }
@@ -58,9 +61,11 @@ export function InvoiceFormFields({
   orgId,
   customers,
   orgStateCode,
+  fieldConfig,
   isSubmitting,
   submitLabel,
 }: Props) {
+  const fc = fieldConfig ?? { challanNo: true, vehicleNo: true, siteLocation: true, billingAddress: true }
   const { control, register, watch, formState: { errors } } = form
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" })
@@ -349,28 +354,40 @@ export function InvoiceFormFields({
       </div>
 
       {/* ── Additional Details ── */}
-      <SectionHeading>Additional Details</SectionHeading>
+      {(fc.challanNo || fc.vehicleNo || fc.siteLocation || fc.billingAddress) && (
+        <SectionHeading>Additional Details</SectionHeading>
+      )}
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>Challan No.</FieldLabel>
-          <Input {...register("challanNo")} placeholder="e.g. CH-001" />
+      {(fc.challanNo || fc.vehicleNo || fc.siteLocation) && (
+        <div className="grid grid-cols-3 gap-4">
+          {fc.challanNo && (
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Challan No.</FieldLabel>
+              <Input {...register("challanNo")} placeholder="e.g. CH-001" />
+            </div>
+          )}
+          {fc.vehicleNo && (
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Vehicle No.</FieldLabel>
+              <Input {...register("vehicleNo")} placeholder="e.g. WB 01 AB 1234" />
+            </div>
+          )}
+          {fc.siteLocation && (
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Site / Delivery Location</FieldLabel>
+              <Input {...register("siteLocation")} placeholder="Delivery site or location" />
+            </div>
+          )}
         </div>
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>Vehicle No.</FieldLabel>
-          <Input {...register("vehicleNo")} placeholder="e.g. WB 01 AB 1234" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>Site / Delivery Location</FieldLabel>
-          <Input {...register("siteLocation")} placeholder="Delivery site or location" />
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel>Billing Address</FieldLabel>
-          <Input {...register("billingAddress")} placeholder="If different from customer address" />
-        </div>
+        {fc.billingAddress && (
+          <div className="flex flex-col gap-1.5">
+            <FieldLabel>Billing Address</FieldLabel>
+            <Input {...register("billingAddress")} placeholder="If different from customer address" />
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <FieldLabel>PO / Reference No.</FieldLabel>
           <Input {...register("referenceNumber")} placeholder="e.g. PO-2024-001" />

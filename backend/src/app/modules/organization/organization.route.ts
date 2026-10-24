@@ -92,6 +92,15 @@ router.use("/:id/suppliers", SupplierRoutes);
 router.use("/:id/purchase-orders", PurchaseOrderRoutes);
 router.use("/:id/analytics", AnalyticsRoutes);
 
+// Invoice field config — any member can read, owner/admin can update
+router.get("/:id/invoice-field-config", ownershipGuard, OrgController.getInvoiceFieldConfig);
+router.patch(
+  "/:id/invoice-field-config",
+  orgRole("org:manage"),
+  validateRequest(OrgValidation.updateInvoiceFieldConfigSchema),
+  OrgController.updateInvoiceFieldConfig
+);
+
 // Logo upload — owner or admin
 router.post(
   "/:id/logo",

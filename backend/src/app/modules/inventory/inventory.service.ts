@@ -429,6 +429,61 @@ const getSummary = async (organizationId: number) => {
   };
 };
 
+// ─── Inventory valuation ───────────────────────────────────────────────────
+
+const getValuation = async (organizationId: number) => {
+  const [products, variants] = await Promise.all([
+    prisma.$queryRaw<
+      Array<{
+        total_value: string | null;
+        total_items: string;
+        total_stock: string;
+      }>
+    >`
+      SELECT
+        SUM(stock_quantity * COALESCE(purchase_price, selling_price)) AS total_value,
+        COUNT(*) AS total_items,
+        SUM(stock_quantity) AS total_stock
+      FROM products
+      WHERE organization_id = ${organizationId}
+        AND is_active = 1
+        AND has_variants = 0
+        AND stock_quantity > 0
+    `,
+    prisma.$queryRaw<
+      Array<{
+        total_value: string | null;
+        total_items: string;
+        total_stock: string;
+      }>
+    >`
+      SELECT
+        SUM(pv.stock_quantity * COALESCE(pv.purchase_price, pv.selling_price, p.purchase_price, p.selling_price)) AS total_value,
+        COUNT(*) AS total_items,
+        SUM(pv.stock_quantity) AS total_stock
+      FROM product_variants pv
+      JOIN products p ON p.id = pv.product_id
+      WHERE p.organization_id = ${organizationId}
+        AND p.is_active = 1
+        AND pv.is_active = 1
+        AND pv.stock_quantity > 0
+    `,
+  ]);
+
+  const prodVal = Number(products[0]?.total_value ?? 0);
+  const varVal = Number(variants[0]?.total_value ?? 0);
+
+  return {
+    totalValue: (prodVal + varVal).toFixed(2),
+    productValue: prodVal.toFixed(2),
+    variantValue: varVal.toFixed(2),
+    productItems: Number(products[0]?.total_items ?? 0),
+    variantItems: Number(variants[0]?.total_items ?? 0),
+    productStock: Number(products[0]?.total_stock ?? 0).toFixed(3),
+    variantStock: Number(variants[0]?.total_stock ?? 0).toFixed(3),
+  };
+};
+
 export const InventoryService = {
   adjustStock,
   setStock,
@@ -438,4 +493,5 @@ export const InventoryService = {
   reverseStockForInvoice,
   getLowStock,
   getSummary,
+  getValuation,
 };

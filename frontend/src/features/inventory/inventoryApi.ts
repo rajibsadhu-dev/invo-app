@@ -93,6 +93,24 @@ export const inventoryApi = baseApi.injectEndpoints({
         { type: "Inventory", id: orgId },
       ],
     }),
+
+    getInventoryValuation: builder.query<
+      ApiResponse<{
+        totalValue: string
+        productValue: string
+        variantValue: string
+        productItems: number
+        variantItems: number
+        productStock: string
+        variantStock: string
+      }>,
+      number
+    >({
+      query: (orgId) => `/organizations/${orgId}/inventory/valuation`,
+      providesTags: (_result, _error, orgId) => [
+        { type: "Inventory", id: orgId },
+      ],
+    }),
   }),
 })
 
@@ -103,4 +121,5 @@ export const {
   useGetOrgMovementsQuery,
   useGetLowStockQuery,
   useGetInventorySummaryQuery,
+  useGetInventoryValuationQuery,
 } = inventoryApi

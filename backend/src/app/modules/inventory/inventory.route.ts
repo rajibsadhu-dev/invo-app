@@ -53,4 +53,10 @@ router.get(
   InventoryController.getSummary
 );
 
+router.get(
+  "/valuation",
+  orgRole("product:view"),
+  InventoryController.getValuation
+);
+
 export const InventoryRoutes = router;

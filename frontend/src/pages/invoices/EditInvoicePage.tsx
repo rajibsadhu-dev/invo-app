@@ -8,7 +8,8 @@ import { toast } from "sonner"
 import { InvoForm } from "@/components/form"
 import { useGetInvoiceByIdQuery, useUpdateInvoiceMutation } from "@/features/invoice/invoiceApi"
 import { useGetCustomersQuery } from "@/features/customer/customerApi"
-import { useGetOrganizationByIdQuery } from "@/features/org/orgApi"
+import { useGetOrganizationByIdQuery, useGetInvoiceFieldConfigQuery } from "@/features/org/orgApi"
+import { resolveFieldConfig } from "@/lib/invoiceFieldConfig"
 import { useBreadcrumbs } from "@/context/breadcrumbStore"
 import { InvoiceFormFields } from "./InvoiceFormFields"
 import { invoiceFormSchema, todayString, type InvoiceFormValues } from "./invoiceForm.schema"
@@ -36,6 +37,9 @@ export default function EditInvoicePage() {
 
   const { data: customersData } = useGetCustomersQuery({ orgId: oId, limit: 100 })
   const customers = customersData?.data ?? []
+
+  const { data: fieldConfigData } = useGetInvoiceFieldConfigQuery(oId)
+  const fieldConfig = resolveFieldConfig(org?.businessType, fieldConfigData?.data)
 
   const [updateInvoice, { isLoading: isSaving }] = useUpdateInvoiceMutation()
 
@@ -151,6 +155,7 @@ export default function EditInvoicePage() {
           orgId={oId}
           customers={customers}
           orgStateCode={org?.stateCode}
+          fieldConfig={fieldConfig}
           isSubmitting={isSaving}
           submitLabel="Save Changes"
         />

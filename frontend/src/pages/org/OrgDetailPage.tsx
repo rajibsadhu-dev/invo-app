@@ -19,7 +19,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -39,12 +39,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { InvoForm, InvoInput, InvoSelect } from "@/components/form"
 import {
   useGetOrganizationByIdQuery,
   useUpdateOrganizationMutation,
   useDeleteOrganizationMutation,
   useUploadOrgLogoMutation,
+  useGetInvoiceFieldConfigQuery,
+  useUpdateInvoiceFieldConfigMutation,
 } from "@/features/org/orgApi"
 import { useGetUsersQuery } from "@/features/user/userApi"
 import { useAssignOrganizationMutation } from "@/features/admin/adminOrgApi"
@@ -54,6 +58,12 @@ import type { Organization } from "@/types"
 import { getApiErrorMessage } from "@/lib/apiError"
 import { BUSINESS_TYPE_LIST_ID } from "@/lib/businessTypes"
 import { BusinessTypeOptions } from "@/components/form/BusinessTypeOptions"
+import {
+  resolveFieldConfig,
+  INVOICE_FIELD_KEYS,
+  INVOICE_FIELD_LABELS,
+  type InvoiceFieldConfig,
+} from "@/lib/invoiceFieldConfig"
 
 // ─── Edit Dialog ───────────────────────────────────────────────────────────────
 
@@ -363,6 +373,64 @@ function LogoSection({ org }: { org: Organization }) {
   )
 }
 
+// ─── Invoice Field Config ─────────────────────────────────────────────────────
+
+function InvoiceFieldConfigSection({ org }: { org: Organization }) {
+  const { data: configData, isLoading } = useGetInvoiceFieldConfigQuery(org.id)
+  const [updateConfig, { isLoading: isSaving }] = useUpdateInvoiceFieldConfigMutation()
+
+  const override = configData?.data ?? {}
+  const resolved = resolveFieldConfig(org.businessType, override)
+
+  const handleToggle = async (key: keyof InvoiceFieldConfig, checked: boolean) => {
+    try {
+      await updateConfig({
+        orgId: org.id,
+        body: { ...override, [key]: checked },
+      }).unwrap()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Failed to update field config"))
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Invoice Field Visibility</CardTitle>
+        <CardDescription>
+          Choose which optional fields appear on the invoice form.
+          Defaults are based on your business type ({org.businessType || "not set"}).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {INVOICE_FIELD_KEYS.map((key) => (
+          <div key={key} className="flex items-center justify-between gap-4">
+            <Label htmlFor={`field-${key}`} className="text-sm font-medium">
+              {INVOICE_FIELD_LABELS[key]}
+            </Label>
+            <Switch
+              id={`field-${key}`}
+              checked={resolved[key]}
+              onCheckedChange={(checked: boolean) => handleToggle(key, checked)}
+              disabled={isSaving}
+            />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function OrgDetailPage() {
@@ -512,6 +580,9 @@ export default function OrgDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Invoice Field Config */}
+      <InvoiceFieldConfigSection org={org} />
 
       {/* Edit Dialog */}
       {org && (

@@ -36,6 +36,7 @@ import EditPOPage from "@/pages/purchase-orders/EditPOPage"
 import PODetailPage from "@/pages/purchase-orders/PODetailPage"
 import OrgDashboardPage from "@/pages/analytics/OrgDashboardPage"
 import GstSummaryPage from "@/pages/analytics/GstSummaryPage"
+import VerifyInvoicePage from "@/pages/verify/VerifyInvoicePage"
 
 const router = createBrowserRouter([
   {
@@ -61,6 +62,10 @@ const router = createBrowserRouter([
   {
     path: "/accept-invite",
     element: <AcceptInvitePage />,
+  },
+  {
+    path: "/verify/:token",
+    element: <VerifyInvoicePage />,
   },
   {
     path: "/",

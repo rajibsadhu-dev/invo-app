@@ -1,3 +1,11 @@
+export type InvoiceFieldConfig = {
+  challanNo?: boolean;
+  vehicleNo?: boolean;
+  siteLocation?: boolean;
+  billingAddress?: boolean;
+  qrVerification?: boolean;
+};
+
 export type IOrganization = {
   name: string;
   ownerId: number;
@@ -13,6 +21,7 @@ export type IOrganization = {
   businessType?: string;
   invoicePrefix?: string;
   nextInvoiceNumber?: number;
+  invoiceFieldConfig?: InvoiceFieldConfig | null;
 };
 
 export type ICreateOrganization = Omit<IOrganization, "ownerId">;
